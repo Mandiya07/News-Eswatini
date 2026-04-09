@@ -1,0 +1,7 @@
+{
+  "name": "News Eswatini",
+  "description": "A modern, interactive news platform delivering reliable stories across the Kingdom of Eswatini, from national headlines to local constituency updates.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", var(--font-sans);
+  --font-black: 900;
+  
+  --color-brand: #e11d48; /* rose-600 */
+  --color-brand-dark: #be123c; /* rose-700 */
+}
+
+@layer base {
+  body {
+    @apply antialiased text-zinc-900 bg-white dark:bg-zinc-950 dark:text-zinc-100 font-sans selection:bg-rose-100 dark:selection:bg-rose-900/30;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer components {
+  .animate-marquee {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 30s linear infinite;
+  }
+
+  @keyframes marquee {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-100%, 0); }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .markdown-body {
+    @apply text-zinc-800 dark:text-zinc-200 leading-relaxed;
+  }
+  .markdown-body h1 { @apply text-3xl font-black mb-6 mt-12; }
+  .markdown-body h2 { @apply text-2xl font-black mb-4 mt-10; }
+  .markdown-body h3 { @apply text-xl font-bold mb-3 mt-8; }
+  .markdown-body p { @apply mb-6; }
+  .markdown-body ul { @apply list-disc list-inside mb-6 space-y-2; }
+  .markdown-body ol { @apply list-decimal list-inside mb-6 space-y-2; }
+  .markdown-body blockquote { @apply border-l-4 border-red-600 pl-6 italic my-8 text-zinc-600 dark:text-zinc-400; }
+  .markdown-body strong { @apply font-black text-zinc-900 dark:text-white; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-zinc-100 dark:bg-zinc-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-300 dark:bg-zinc-700 rounded-full hover:bg-zinc-400 dark:hover:bg-zinc-600 transition-colors;
+}

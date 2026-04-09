@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "editor", "reporter", "reader"] },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "earnings": { "type": "number" },
+        "totalViews": { "type": "number" },
+        "articleCount": { "type": "number" },
+        "reputationPoints": { "type": "number" },
+        "paymentDetails": {
+          "type": "object",
+          "properties": {
+            "method": { "type": "string", "enum": ["mobile_money", "bank_transfer"] },
+            "accountNumber": { "type": "string" },
+            "accountName": { "type": "string" }
+          }
+        }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "News article content",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "category": { "type": "string" },
+        "region": { "type": "string" },
+        "inkhundla": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["draft", "published", "scheduled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "views": { "type": "integer" },
+        "likes": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "featured": { "type": "boolean" },
+        "breaking": { "type": "boolean" },
+        "imageURL": { "type": "string" },
+        "videoURL": { "type": "string" },
+        "earningsGenerated": { "type": "number" },
+        "payoutStatus": { "type": "string", "enum": ["pending", "paid"] }
+      },
+      "required": ["title", "content", "authorId", "category", "status"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comment on an article",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "articleId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["articleId", "userId", "content"]
+    },
+    "Poll": {
+      "title": "Poll",
+      "description": "Interactive poll for readers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "votes": { "type": "integer" }
+            }
+          }
+        },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["question", "options"]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "Citizen journalism story submission",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "submitterName": { "type": "string" },
+        "submitterEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "reviewed", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "submitterName", "submitterEmail"]
+    },
+    "Payout": {
+      "title": "Payout",
+      "description": "Record of a payment made to a contributor",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["mobile_money", "bank_transfer"] },
+        "accountNumber": { "type": "string" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "processedBy": { "type": "string" }
+      },
+      "required": ["userId", "userName", "amount", "method", "accountNumber", "processedAt", "processedBy"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/articles/{articleId}": { "schema": "Article", "description": "News articles" },
+    "/articles/{articleId}/comments/{commentId}": { "schema": "Comment", "description": "Article comments" },
+    "/polls/{pollId}": { "schema": "Poll", "description": "Interactive polls" },
+    "/submissions/{submissionId}": { "schema": "Submission", "description": "User-submitted stories" },
+    "/payouts/{payoutId}": { "schema": "Payout", "description": "Payout records" },
+    "/_connection_test_/{testId}": { "schema": "object", "description": "Connection test collection" }
+  }
+}

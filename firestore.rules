@@ -1,0 +1,230 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - name: string (required, 1-100 chars)
+    //   - email: string (required, email format)
+    //   - role: string (required, enum: admin, editor, reporter, reader)
+    //   - photoURL: string (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: articles
+    // Document ID: articleId
+    // Fields:
+    //   - id: string
+    //   - title: string (required, 1-200 chars)
+    //   - content: string (required, 1-50000 chars)
+    //   - authorId: string (required)
+    //   - authorName: string (required)
+    //   - category: string (required)
+    //   - region: string (optional)
+    //   - inkhundla: string (optional)
+    //   - tags: list (optional, max 10 items)
+    //   - status: string (required, enum: draft, published, scheduled)
+    //   - createdAt: timestamp (required)
+    //   - updatedAt: timestamp (required)
+    //   - views: number (optional)
+    //   - likes: number (optional)
+    //   - commentsCount: number (optional)
+    //   - featured: bool (optional)
+    //   - breaking: bool (optional)
+    //   - imageURL: string (optional)
+    //   - videoURL: string (optional)
+    //
+    // Collection: articles/{articleId}/comments
+    // Document ID: commentId
+    // Fields:
+    //   - id: string
+    //   - articleId: string (required)
+    //   - userId: string (required)
+    //   - userName: string (required)
+    //   - userPhoto: string (optional)
+    //   - content: string (required, 1-1000 chars)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: polls
+    // Document ID: pollId
+    // Fields:
+    //   - id: string
+    //   - question: string (required, 1-500 chars)
+    //   - options: list (required, max 10 items)
+    //   - active: bool (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: submissions
+    // Document ID: submissionId
+    // Fields:
+    //   - id: string
+    //   - title: string (required, 1-200 chars)
+    //   - content: string (required, 1-10000 chars)
+    //   - submitterName: string (required)
+    //   - submitterEmail: string (required)
+    //   - status: string (required, enum: pending, reviewed, rejected)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "siphom.yati@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isEditor() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor' || isAdmin());
+    }
+
+    function isReporter() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reporter' || isEditor());
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      let requiredFields = ['uid', 'name', 'email', 'role', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'editor', 'reporter', 'reader'] &&
+             data.createdAt is timestamp &&
+             (!('earnings' in data) || data.earnings is number) &&
+             (!('totalViews' in data) || data.totalViews is number) &&
+             (!('articleCount' in data) || data.articleCount is number) &&
+             (!('reputationPoints' in data) || data.reputationPoints is number);
+    }
+
+    function isValidArticle(data) {
+      let requiredFields = ['title', 'content', 'authorId', 'authorName', 'category', 'status', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 50000 &&
+             data.authorId is string &&
+             data.authorName is string &&
+             data.category is string &&
+             data.status in ['draft', 'published', 'scheduled'] &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             (!('views' in data) || data.views is number) &&
+             (!('earningsGenerated' in data) || data.earningsGenerated is number);
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['articleId', 'userId', 'userName', 'content', 'createdAt']) &&
+             data.articleId is string &&
+             data.userId == request.auth.uid &&
+             data.userName is string &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidPoll(data) {
+      return data.keys().hasAll(['question', 'options', 'active', 'createdAt']) &&
+             data.question is string && data.question.size() > 0 && data.question.size() <= 500 &&
+             data.options is list && data.options.size() > 0 && data.options.size() <= 10 &&
+             data.active is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidSubmission(data) {
+      return data.keys().hasAll(['title', 'content', 'submitterName', 'submitterEmail', 'status', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 10000 &&
+             data.submitterName is string &&
+             isValidEmail(data.submitterEmail) &&
+             data.status in ['pending', 'reviewed', 'rejected'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidPayout(data) {
+      return data.keys().hasAll(['userId', 'userName', 'amount', 'method', 'accountNumber', 'processedAt', 'processedBy']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.amount is number && data.amount > 0 &&
+             data.method in ['mobile_money', 'bank_transfer'] &&
+             data.accountNumber is string &&
+             data.processedAt is timestamp &&
+             data.processedBy == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'reader';
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role) || 
+                     isAdmin() ||
+                     (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['earnings', 'totalViews', 'articleCount', 'reputationPoints']));
+    }
+
+    match /articles/{articleId} {
+      allow read: if resource.data.status == 'published' || isReporter();
+      allow create: if isReporter() && isValidArticle(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+      allow update: if (isReporter() && isValidArticle(request.resource.data) && (resource.data.authorId == request.auth.uid || isEditor())) || 
+                     isAdmin() ||
+                     (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'earningsGenerated', 'commentsCount', 'likes']));
+      allow delete: if isEditor();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow update: if isOwner(resource.data.userId) && isValidComment(request.resource.data);
+        allow delete: if isOwner(resource.data.userId) || isEditor();
+      }
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create, update, delete: if isEditor();
+    }
+
+    match /submissions/{submissionId} {
+      allow read: if isReporter();
+      allow create: if true && isValidSubmission(request.resource.data) && request.resource.data.status == 'pending';
+      allow update: if isReporter();
+      allow delete: if isEditor();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidPayout(request.resource.data);
+    }
+
+    match /_connection_test_/{testId} {
+      allow read: if true;
+    }
+  }
+}
