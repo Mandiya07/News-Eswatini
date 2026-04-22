@@ -102,6 +102,11 @@ export default function ConstituencyDetail() {
                       {article.category}
                     </span>
                   </div>
+                  {/* Hover Preview */}
+                  <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8 flex flex-col justify-center items-center text-center z-10 pointer-events-none">
+                    <h4 className="text-lg font-black uppercase tracking-tighter mb-4 dark:text-white line-clamp-2">{article.title}</h4>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-6">{article.content}</p>
+                  </div>
                 </Link>
                 <div className="p-8 flex-1 flex flex-col">
                   <div className="flex items-center gap-4 text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-4">

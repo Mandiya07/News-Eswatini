@@ -8,6 +8,14 @@ export interface User {
   photoURL?: string;
   createdAt: any;
   constituency?: string;
+  bio?: string;
+  videoBio?: string;
+  socials?: {
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+    website?: string;
+  };
   // Contributor fields
   earnings?: number;
   totalViews?: number;
@@ -28,6 +36,7 @@ export interface Article {
   content: string;
   authorId: string;
   authorName: string;
+  authorPhoto?: string;
   category: string;
   region?: string;
   inkhundla?: string;
@@ -55,6 +64,18 @@ export interface Comment {
   userPhoto?: string;
   content: string;
   createdAt: any;
+  likes?: number;
+  likedBy?: string[];
+  replies?: Reply[];
+}
+
+export interface Reply {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  content: string;
+  createdAt: any;
 }
 
 export interface Poll {
@@ -72,6 +93,8 @@ export interface Submission {
   submitterName: string;
   submitterEmail: string;
   constituency?: string;
+  imageURL?: string;
+  videoURL?: string;
   status: 'pending' | 'reviewed' | 'rejected';
   createdAt: any;
 }
@@ -85,4 +108,21 @@ export interface Payout {
   accountNumber: string;
   processedAt: any;
   processedBy: string;
+}
+
+export type EventType = 'funeral' | 'meeting' | 'announcement' | 'celebration' | 'other';
+
+export interface CommunityEvent {
+  id: string;
+  title: string;
+  description: string;
+  eventType: EventType;
+  date: any; // Date of the event
+  location: string;
+  region?: string;
+  constituency?: string;
+  submitterId: string;
+  submitterName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: any;
 }

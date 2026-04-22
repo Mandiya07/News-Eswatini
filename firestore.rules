@@ -79,24 +79,43 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "siphom.yati@gmail.com" && request.auth.token.email_verified == true));
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "siphom.yati@gmail.com" && request.auth.token.email_verified == true)
+        );
     }
 
     function isEditor() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor' || isAdmin());
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor') || 
+          isAdmin()
+        );
     }
 
     function isReporter() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reporter' || isEditor());
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reporter') || 
+          isEditor()
+        );
     }
 
     function isValidEmail(email) {
@@ -183,26 +202,38 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'reader';
-      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role) || 
+      allow read: if (isOwner(userId)) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role == 'reader';
+      allow update: if (isOwner(userId) && isValidUser(incoming()) && incoming().role == existing().role) || 
                      isAdmin() ||
-                     (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['earnings', 'totalViews', 'articleCount', 'reputationPoints']));
+                     (incoming().diff(existing()).affectedKeys().hasOnly(['earnings', 'totalViews', 'articleCount', 'reputationPoints']));
     }
 
     match /articles/{articleId} {
-      allow read: if resource.data.status == 'published' || isReporter();
-      allow create: if isReporter() && isValidArticle(request.resource.data) && request.resource.data.authorId == request.auth.uid;
-      allow update: if (isReporter() && isValidArticle(request.resource.data) && (resource.data.authorId == request.auth.uid || isEditor())) || 
-                     isAdmin() ||
-                     (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'earningsGenerated', 'commentsCount', 'likes']));
+      allow read: if existing().status == 'published' || isReporter();
+      allow create: if isReporter() && isValidArticle(incoming()) && incoming().authorId == request.auth.uid;
+      allow update: if (
+        (isValidArticle(incoming()) && (
+          // Only the author can edit (must be a reporter)
+          (isOwner(existing().authorId) && isReporter()) || 
+          // Editors can edit everything
+          isEditor()
+        ) && 
+        // authorId and createdAt are immutable
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt) ||
+        // Emergency admin access
+        isAdmin() ||
+        // Public engagement updates
+        (incoming().diff(existing()).affectedKeys().hasOnly(['views', 'earningsGenerated', 'commentsCount', 'likes']))
+      );
       allow delete: if isEditor();
 
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if isAuthenticated() && isValidComment(request.resource.data);
-        allow update: if isOwner(resource.data.userId) && isValidComment(request.resource.data);
-        allow delete: if isOwner(resource.data.userId) || isEditor();
+        allow create: if isAuthenticated() && isValidComment(incoming());
+        allow update: if isOwner(existing().userId) && isValidComment(incoming());
+        allow delete: if isOwner(existing().userId) || isEditor();
       }
     }
 
@@ -213,14 +244,14 @@ service cloud.firestore {
 
     match /submissions/{submissionId} {
       allow read: if isReporter();
-      allow create: if true && isValidSubmission(request.resource.data) && request.resource.data.status == 'pending';
+      allow create: if true && isValidSubmission(incoming()) && incoming().status == 'pending';
       allow update: if isReporter();
       allow delete: if isEditor();
     }
 
     match /payouts/{payoutId} {
       allow read: if isAdmin();
-      allow create: if isAdmin() && isValidPayout(request.resource.data);
+      allow create: if isAdmin() && isValidPayout(incoming());
     }
 
     match /_connection_test_/{testId} {

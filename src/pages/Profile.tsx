@@ -4,23 +4,27 @@ import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin } from 'lucide-react';
 import { formatDate, cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
 import { ALL_TINKHUNDLA } from '../constants';
+
+import MediaUpload from '../components/MediaUpload';
 
 export default function Profile() {
   const { user, userData, loading, isContributor } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
   const [constituency, setConstituency] = useState('');
+  const [videoBio, setVideoBio] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user && userData) {
       setName(userData.name || user.displayName || '');
       setConstituency(userData.constituency || '');
+      setVideoBio(userData.videoBio || '');
     }
   }, [user, userData]);
 
@@ -32,7 +36,7 @@ export default function Profile() {
       await updateProfile(user, { displayName: name });
       const path = `users/${user.uid}`;
       try {
-        await updateDoc(doc(db, 'users', user.uid), { name, constituency });
+        await updateDoc(doc(db, 'users', user.uid), { name, constituency, videoBio });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, path);
       }
@@ -40,6 +44,17 @@ export default function Profile() {
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
+    }
+  };
+
+  const updatePhoto = async (url: string) => {
+    if (!user) return;
+    try {
+      await updateProfile(user, { photoURL: url });
+      await updateDoc(doc(db, 'users', user.uid), { photoURL: url });
+      toast.success('Profile picture updated!');
+    } catch (error) {
+      toast.error('Failed to update profile picture');
     }
   };
 
@@ -59,82 +74,92 @@ export default function Profile() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-12"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-16"
         >
           
           {/* Sidebar Info */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-[2.5rem] p-10 border border-zinc-100 dark:border-zinc-800 shadow-sm text-center relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-full h-1 bg-rose-600"></div>
+          <div className="lg:col-span-4 space-y-10">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-[3rem] p-12 border border-zinc-100 dark:border-zinc-800 shadow-sm text-center relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-600"></div>
               
-              <div className="relative inline-block mb-8">
-                <div className="w-40 h-40 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center overflow-hidden border-8 border-white dark:border-zinc-800 shadow-2xl mx-auto transition-transform duration-500 group-hover:scale-105">
+              <div className="relative inline-block mb-10">
+                <div className="w-48 h-48 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center overflow-hidden border-8 border-white dark:border-zinc-800 shadow-2xl mx-auto transition-transform duration-700 group-hover:scale-105 relative">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon size={80} className="text-zinc-200 dark:text-zinc-700" />
+                    <UserIcon size={96} className="text-zinc-200 dark:text-zinc-700" />
                   )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="text-white" size={32} />
+                  </div>
                 </div>
-                <button className="absolute bottom-2 right-2 p-3 bg-rose-600 text-white rounded-2xl shadow-xl hover:bg-rose-700 transition-all hover:scale-110 active:scale-95">
-                  <Camera size={20} />
-                </button>
+                <MediaUpload 
+                  onUploadComplete={(url) => updatePhoto(url)}
+                  accept="image"
+                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                />
               </div>
               
-              <div className="space-y-2 mb-8">
-                <h2 className="text-3xl font-black dark:text-white tracking-tighter leading-none">{userData?.name || user.displayName || 'User'}</h2>
+              <div className="space-y-3 mb-10">
+                <h2 className="serif text-4xl font-black dark:text-white tracking-tighter leading-none">{userData?.name || user.displayName || 'User'}</h2>
                 <p className="text-sm text-zinc-500 font-medium">{user.email}</p>
+                {userData?.constituency && (
+                  <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    <MapPin size={12} /> {userData.constituency}
+                  </div>
+                )}
               </div>
 
-              <div className="flex flex-wrap justify-center gap-2 mb-10">
-                <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                  <Shield size={12} className="text-rose-500" /> {userData?.role || 'Reader'}
+              <div className="flex flex-wrap justify-center gap-3 mb-12">
+                <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-sm border border-zinc-100 dark:border-zinc-700">
+                  <Shield size={14} className="text-rose-500" /> {userData?.role || 'Reader'}
                 </span>
-                <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                  <Calendar size={12} className="text-rose-500" /> Joined {formatDate(userData?.createdAt?.toDate() || new Date())}
+                <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-sm border border-zinc-100 dark:border-zinc-700">
+                  <Calendar size={14} className="text-rose-500" /> Joined {formatDate(userData?.createdAt?.toDate() || new Date())}
                 </span>
               </div>
 
               <button 
                 onClick={() => setIsEditing(!isEditing)}
-                className="w-full py-4 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-xl shadow-zinc-950/10"
+                className="w-full py-5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-zinc-950/10"
               >
-                <Edit2 size={16} /> Edit Profile
+                <Edit2 size={18} /> Edit Profile
               </button>
             </div>
 
-            <div className="bg-zinc-950 text-white rounded-[2.5rem] p-10 shadow-2xl shadow-zinc-950/20 border border-white/5 relative overflow-hidden">
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-rose-600/20 rounded-full blur-3xl"></div>
-              <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-2">
-                <TrendingUp size={14} /> Account Stats
+            <div className="bg-zinc-950 text-white rounded-[3rem] p-12 shadow-2xl shadow-zinc-950/20 border border-white/5 relative overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-rose-600/10 rounded-full blur-3xl"></div>
+              <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em] mb-12 flex items-center gap-3">
+                <TrendingUp size={16} /> Account Stats
               </h3>
-              <div className="grid grid-cols-1 gap-8">
+              <div className="grid grid-cols-1 gap-10">
                 {isContributor ? (
                   <>
                     <div className="flex items-center justify-between group">
                       <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Earnings</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">SZL {(userData.earnings || 0).toFixed(2)}</p>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Total Earnings</p>
+                        <p className="serif text-4xl font-black text-white tracking-tighter italic">SZL {(userData.earnings || 0).toFixed(2)}</p>
                       </div>
-                      <div className="w-12 h-12 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-                        <Wallet size={24} />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between group">
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Views</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">{(userData.totalViews || 0).toLocaleString()}</p>
-                      </div>
-                      <div className="w-12 h-12 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-                        <TrendingUp size={24} />
+                      <div className="w-14 h-14 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                        <Wallet size={28} />
                       </div>
                     </div>
                     <div className="flex items-center justify-between group">
                       <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Reputation</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">{userData.reputationPoints || 0}</p>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Total Views</p>
+                        <p className="serif text-4xl font-black text-white tracking-tighter italic">{(userData.totalViews || 0).toLocaleString()}</p>
                       </div>
-                      <div className="w-12 h-12 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-                        <Award size={24} />
+                      <div className="w-14 h-14 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                        <TrendingUp size={28} />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between group">
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Reputation</p>
+                        <p className="serif text-4xl font-black text-white tracking-tighter italic">{userData.reputationPoints || 0}</p>
+                      </div>
+                      <div className="w-14 h-14 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                        <Award size={28} />
                       </div>
                     </div>
                   </>
@@ -142,29 +167,29 @@ export default function Profile() {
                   <>
                     <div className="flex items-center justify-between group">
                       <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Bookmarks</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">12</p>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Bookmarks</p>
+                        <p className="serif text-4xl font-black text-white tracking-tighter italic">12</p>
                       </div>
-                      <div className="w-12 h-12 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-                        <Bookmark size={24} />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between group">
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Likes Given</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">45</p>
-                      </div>
-                      <div className="w-12 h-12 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-                        <Heart size={24} />
+                      <div className="w-14 h-14 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                        <Bookmark size={28} />
                       </div>
                     </div>
                     <div className="flex items-center justify-between group">
                       <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Comments</p>
-                        <p className="text-3xl font-black text-white tracking-tighter">8</p>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Likes Given</p>
+                        <p className="serif text-4xl font-black text-white tracking-tighter italic">45</p>
                       </div>
-                      <div className="w-12 h-12 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-                        <MessageSquare size={24} />
+                      <div className="w-14 h-14 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                        <Heart size={28} />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between group">
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Comments</p>
+                        <p className="serif text-4xl font-black text-white tracking-tighter italic">8</p>
+                      </div>
+                      <div className="w-14 h-14 bg-rose-600/10 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                        <MessageSquare size={28} />
                       </div>
                     </div>
                   </>
@@ -174,7 +199,7 @@ export default function Profile() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-8 space-y-12">
+          <div className="lg:col-span-8 space-y-16">
             <AnimatePresence mode="wait">
               {isEditing ? (
                 <motion.div 
@@ -182,51 +207,60 @@ export default function Profile() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="bg-zinc-50 dark:bg-zinc-900/50 rounded-[2.5rem] p-12 border border-zinc-100 dark:border-zinc-800 shadow-sm"
+                  className="bg-zinc-50 dark:bg-zinc-900/50 rounded-[3rem] p-12 border border-zinc-100 dark:border-zinc-800 shadow-sm"
                 >
-                  <h3 className="text-4xl font-black uppercase tracking-tighter mb-10 dark:text-white leading-none">Edit Profile</h3>
-                  <form onSubmit={handleUpdateProfile} className="space-y-8">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1">Display Name</label>
+                  <h3 className="serif text-5xl font-black uppercase tracking-tighter mb-12 dark:text-white leading-none">Edit Profile</h3>
+                  <form onSubmit={handleUpdateProfile} className="space-y-10">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Display Name</label>
                       <input 
                         type="text" 
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-6 py-4 text-sm font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                        className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-[1.5rem] px-8 py-5 text-sm font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
                         placeholder="Enter your name"
                       />
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1">Constituency</label>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Constituency</label>
                       <select
                         value={constituency}
                         onChange={(e) => setConstituency(e.target.value)}
-                        className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-6 py-4 text-sm font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                        className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-[1.5rem] px-8 py-5 text-sm font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all appearance-none"
                       >
-                        <option value="">Select a constituency</option>
+                        <option value="">Select your constituency</option>
                         {ALL_TINKHUNDLA.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 px-1">Email Address (Read Only)</label>
+
+                    {isContributor && (
+                      <MediaUpload 
+                        label="Video Biography (Reporter Bio)"
+                        accept="video"
+                        onUploadComplete={(url) => setVideoBio(url)}
+                      />
+                    )}
+
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Email Address (Read Only)</label>
                       <input 
                         type="email" 
                         value={user.email}
                         disabled
-                        className="w-full bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-6 py-4 text-sm text-zinc-500 font-medium outline-none cursor-not-allowed"
+                        className="w-full bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-700 rounded-[1.5rem] px-8 py-5 text-sm text-zinc-500 font-medium outline-none cursor-not-allowed"
                       />
                     </div>
-                    <div className="flex justify-end gap-4 pt-6">
+                    <div className="flex justify-end gap-6 pt-10">
                       <button 
                         type="button" 
                         onClick={() => setIsEditing(false)}
-                        className="px-8 py-4 text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors"
+                        className="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors"
                       >
                         Cancel
                       </button>
                       <button 
                         type="submit"
-                        className="bg-rose-600 text-white px-10 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-xl shadow-rose-600/20 active:scale-95"
+                        className="bg-rose-600 text-white px-12 py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-700 transition-all shadow-2xl shadow-rose-600/20 active:scale-95"
                       >
                         Save Changes
                       </button>
@@ -239,42 +273,42 @@ export default function Profile() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-16"
+                  className="space-y-20"
                 >
                   {/* Bookmarks */}
-                  <section className="space-y-10">
-                    <div className="flex items-center justify-between border-b-4 border-zinc-950 dark:border-white pb-6">
-                      <h3 className="text-3xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-4">
-                        <Bookmark size={28} className="text-rose-600" /> Bookmarked Stories
+                  <section className="space-y-12">
+                    <div className="flex items-center justify-between border-b-4 border-zinc-950 dark:border-white pb-8">
+                      <h3 className="serif text-4xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-5">
+                        <Bookmark size={32} className="text-rose-600" /> Bookmarked Stories
                       </h3>
-                      <button className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:underline flex items-center gap-2 group">
-                        View All <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      <button className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-600 hover:underline flex items-center gap-3 group">
+                        View All <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                       {[1, 2].map(i => (
                         <motion.div 
                           key={i} 
-                          whileHover={{ y: -5 }}
-                          className="bg-white dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col group"
+                          whileHover={{ y: -8 }}
+                          className="bg-white dark:bg-zinc-900/50 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-xl shadow-zinc-950/5 flex flex-col group"
                         >
-                          <div className="aspect-video bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
+                          <div className="aspect-[16/10] bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
                             <img 
                               src={`https://picsum.photos/seed/bookmark-${i}/600/400`} 
                               alt="Bookmark" 
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                               referrerPolicy="no-referrer"
                             />
-                            <div className="absolute top-4 left-4">
-                              <span className="bg-rose-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">Politics</span>
+                            <div className="absolute top-6 left-6">
+                              <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.3em] px-4 py-2 rounded-full shadow-lg shadow-rose-600/20">Politics</span>
                             </div>
                           </div>
-                          <div className="p-8 space-y-4">
-                            <h4 className="text-xl font-black dark:text-zinc-100 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors">New infrastructure project announced for Manzini</h4>
-                            <div className="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800">
-                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">2 days ago</p>
+                          <div className="p-10 space-y-5">
+                            <h4 className="serif text-2xl font-black dark:text-zinc-100 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors tracking-tight">New infrastructure project announced for Manzini</h4>
+                            <div className="flex items-center justify-between pt-6 border-t border-zinc-50 dark:border-zinc-800">
+                              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">2 days ago</p>
                               <button className="text-zinc-400 hover:text-rose-600 transition-colors">
-                                <Bookmark size={16} fill="currentColor" />
+                                <Bookmark size={18} fill="currentColor" />
                               </button>
                             </div>
                           </div>
@@ -284,26 +318,26 @@ export default function Profile() {
                   </section>
 
                   {/* Recent Comments */}
-                  <section className="space-y-10">
-                    <div className="flex items-center justify-between border-b-4 border-zinc-950 dark:border-white pb-6">
-                      <h3 className="text-3xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-4">
-                        <MessageSquare size={28} className="text-rose-600" /> Recent Comments
+                  <section className="space-y-12">
+                    <div className="flex items-center justify-between border-b-4 border-zinc-950 dark:border-white pb-8">
+                      <h3 className="serif text-4xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-5">
+                        <MessageSquare size={32} className="text-rose-600" /> Recent Comments
                       </h3>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       {[1, 2, 3].map(i => (
                         <motion.div 
                           key={i} 
-                          whileHover={{ x: 5 }}
-                          className="bg-zinc-50 dark:bg-zinc-900/50 p-10 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-6 relative overflow-hidden"
+                          whileHover={{ x: 8 }}
+                          className="bg-zinc-50 dark:bg-zinc-900/50 p-12 rounded-[3rem] border border-zinc-100 dark:border-zinc-800 shadow-sm space-y-8 relative overflow-hidden"
                         >
-                          <div className="absolute top-0 left-0 w-1 h-full bg-rose-600/20"></div>
-                          <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium italic">
+                          <div className="absolute top-0 left-0 w-1.5 h-full bg-rose-600/20"></div>
+                          <p className="serif text-2xl text-zinc-600 dark:text-zinc-400 leading-relaxed font-black italic tracking-tight">
                             "This is a great development for our region. We've been waiting for this for a long time."
                           </p>
-                          <div className="flex items-center justify-between pt-6 border-t border-zinc-200 dark:border-zinc-800">
-                            <p className="text-xs font-black dark:text-zinc-200 uppercase tracking-widest">On: Eswatini Economic Outlook 2026</p>
-                            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em]">3 days ago</span>
+                          <div className="flex items-center justify-between pt-8 border-t border-zinc-200 dark:border-zinc-800">
+                            <p className="text-[10px] font-black dark:text-zinc-200 uppercase tracking-[0.2em]">On: Eswatini Economic Outlook 2026</p>
+                            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.3em]">3 days ago</span>
                           </div>
                         </motion.div>
                       ))}

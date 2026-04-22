@@ -13,6 +13,8 @@ import SubmitStory from './pages/SubmitStory';
 import Profile from './pages/Profile';
 import Constituencies from './pages/Constituencies';
 import ConstituencyDetail from './pages/ConstituencyDetail';
+import AuthorProfile from './pages/AuthorProfile';
+import SubmitEvent from './pages/SubmitEvent';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,7 +22,7 @@ function App() {
     <Router>
       <div className="flex flex-col min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-300">
         <Navbar />
-        <main className="flex-grow">
+        <main className="flex-grow pt-28 lg:pt-44">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/article/:id" element={<ArticleDetail />} />
@@ -44,6 +46,14 @@ function App() {
               } 
             />
             <Route 
+              path="/add-event" 
+              element={
+                <ProtectedRoute>
+                  <SubmitEvent />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/profile" 
               element={
                 <ProtectedRoute>
@@ -54,6 +64,7 @@ function App() {
             <Route path="/nationwide" element={<Category category="nationwide" />} />
             <Route path="/constituencies" element={<Constituencies />} />
             <Route path="/constituency/:constituencyName" element={<ConstituencyDetail />} />
+            <Route path="/author/:id" element={<AuthorProfile />} />
           </Routes>
         </main>
         <Footer />

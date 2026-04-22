@@ -16,7 +16,9 @@ export function useAuth() {
       if (currentUser) {
         // Use onSnapshot for real-time updates to user role/data
         const userDocRef = doc(db, 'users', currentUser.uid);
+        console.log("Fetching user data for:", currentUser.uid);
         const unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
+          console.log("Snapshot received, exists:", docSnap.exists());
           if (docSnap.exists()) {
             setUserData({ uid: docSnap.id, ...docSnap.data() } as User);
           } else {
@@ -24,7 +26,7 @@ export function useAuth() {
           }
           setLoading(false);
         }, (error) => {
-          console.error("Error fetching user data:", error);
+          console.error("Error fetching user data for:", currentUser.uid, error);
           setLoading(false);
         });
         

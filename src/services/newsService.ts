@@ -10,6 +10,8 @@ import {
   addDoc, 
   updateDoc, 
   increment,
+  arrayUnion,
+  arrayRemove,
   serverTimestamp,
   Timestamp,
   startAfter,
@@ -18,11 +20,22 @@ import {
   QueryConstraint
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Article, Comment, Poll, Submission } from '../types';
+import { Article, Comment, Poll, Submission, Reply } from '../types';
+import { DEMO_ARTICLES, DEMO_POLLS } from '../constants/demoData';
 
 const ARTICLES_COLLECTION = 'articles';
 const POLLS_COLLECTION = 'polls';
 const SUBMISSIONS_COLLECTION = 'submissions';
+
+// Helper to convert demo articles to proper local Article objects
+const getLocalDemoArticles = (): Article[] => {
+  return DEMO_ARTICLES.map((a, i) => ({
+    id: `demo-${i}`,
+    ...a,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as any));
+};
 
 export const newsService = {
   async getFeaturedArticles(count = 5) {
@@ -36,10 +49,15 @@ export const newsService = {
         limit(count)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Article));
+      const articles = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Article));
+      
+      if (articles.length === 0) {
+        return getLocalDemoArticles().filter(a => a.featured).slice(0, count);
+      }
+      return articles;
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
-      return [];
+      console.warn("Firestore error for featured articles, using demo fallback.");
+      return getLocalDemoArticles().filter(a => a.featured).slice(0, count);
     }
   },
 
@@ -61,15 +79,26 @@ export const newsService = {
       }
 
       const q = query(collection(db, path), ...constraints);
-      
       const snapshot = await getDocs(q);
       const articles = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Article));
+      
+      if (articles.length === 0 && !lastVisible) {
+        let demo = getLocalDemoArticles();
+        if (category) demo = demo.filter(a => a.category === category);
+        return { articles: demo.slice(0, count), lastVisible: null };
+      }
+
       return {
         articles,
         lastVisible: snapshot.docs[snapshot.docs.length - 1] || null
       };
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
+      console.warn("Firestore error for latest articles, using demo fallback.");
+      if (!lastVisible) {
+        let demo = getLocalDemoArticles();
+        if (category) demo = demo.filter(a => a.category === category);
+        return { articles: demo.slice(0, count), lastVisible: null };
+      }
       return { articles: [], lastVisible: null };
     }
   },
@@ -111,6 +140,10 @@ export const newsService = {
   },
 
   async getArticleById(id: string) {
+    if (id.startsWith('demo-')) {
+      const demoArticles = getLocalDemoArticles();
+      return demoArticles.find(a => a.id === id) || null;
+    }
     const path = `${ARTICLES_COLLECTION}/${id}`;
     try {
       const docRef = doc(db, ARTICLES_COLLECTION, id);
@@ -123,24 +156,26 @@ export const newsService = {
         await updateDoc(docRef, { 
           views: increment(1),
           earningsGenerated: increment(earningsIncrement)
-        }).catch(err => handleFirestoreError(err, OperationType.UPDATE, path));
+        }).catch(err => {
+          console.warn("Could not update views/earnings (offline?):", err.message);
+        });
 
         // Update author's total earnings and views
         if (data.authorId) {
-          const authorPath = `users/${data.authorId}`;
           const authorRef = doc(db, 'users', data.authorId);
           await updateDoc(authorRef, {
             earnings: increment(earningsIncrement),
             totalViews: increment(1)
-          }).catch(err => console.error("Could not update author stats:", err));
+          }).catch(err => console.warn("Could not update author stats:", err.message));
         }
 
         return { id: docSnap.id, ...data, views: (data.views || 0) + 1 } as Article;
       }
       return null;
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
-      return null;
+      console.warn("Firestore error for article by ID, checking demo fallback.");
+      const demoArticles = getLocalDemoArticles();
+      return demoArticles.find(a => a.id === id) || null;
     }
   },
 
@@ -159,12 +194,15 @@ export const newsService = {
     }
   },
 
-  async addComment(articleId: string, comment: Omit<Comment, 'id' | 'createdAt'>) {
+  async addComment(articleId: string, comment: Omit<Comment, 'id' | 'createdAt' | 'likes' | 'likedBy' | 'replies'>) {
     const path = `${ARTICLES_COLLECTION}/${articleId}/comments`;
     try {
       const colRef = collection(db, ARTICLES_COLLECTION, articleId, 'comments');
       const docRef = await addDoc(colRef, {
         ...comment,
+        likes: 0,
+        likedBy: [],
+        replies: [],
         createdAt: serverTimestamp()
       });
       // Update comment count on article
@@ -174,6 +212,38 @@ export const newsService = {
       return docRef.id;
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
+      return '';
+    }
+  },
+
+  async likeComment(articleId: string, commentId: string, userId: string, isLiking: boolean) {
+    const path = `${ARTICLES_COLLECTION}/${articleId}/comments/${commentId}`;
+    try {
+      const docRef = doc(db, ARTICLES_COLLECTION, articleId, 'comments', commentId);
+      await updateDoc(docRef, {
+        likes: increment(isLiking ? 1 : -1),
+        likedBy: isLiking ? arrayUnion(userId) : arrayRemove(userId)
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async addReply(articleId: string, commentId: string, reply: Omit<Reply, 'id' | 'createdAt'>) {
+    const path = `${ARTICLES_COLLECTION}/${articleId}/comments/${commentId}`;
+    try {
+      const docRef = doc(db, ARTICLES_COLLECTION, articleId, 'comments', commentId);
+      const replyWithId = {
+        ...reply,
+        id: Math.random().toString(36).substring(2, 9),
+        createdAt: new Date().toISOString() // Using ISO string for array items as serverTimestamp() doesn't work in arrays
+      };
+      await updateDoc(docRef, {
+        replies: arrayUnion(replyWithId)
+      });
+      return replyWithId.id;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
       return '';
     }
   },
@@ -188,10 +258,15 @@ export const newsService = {
         limit(1)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Poll));
+      const polls = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Poll));
+      
+      if (polls.length === 0) {
+        return DEMO_POLLS.map((p, i) => ({ id: `demo-poll-${i}`, ...p } as any));
+      }
+      return polls;
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, path);
-      return [];
+      console.warn("Firestore error for active polls, using demo fallback.");
+      return DEMO_POLLS.map((p, i) => ({ id: `demo-poll-${i}`, ...p } as any));
     }
   },
 
@@ -223,6 +298,54 @@ export const newsService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
       return '';
+    }
+  },
+
+  async submitEvent(event: Omit<import('../types').CommunityEvent, 'id' | 'createdAt' | 'status'>) {
+    const path = 'events';
+    try {
+      const docRef = await addDoc(collection(db, path), {
+        ...event,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+      return '';
+    }
+  },
+
+  async getAuthorById(userId: string) {
+    const path = `users/${userId}`;
+    try {
+      const docRef = doc(db, 'users', userId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { uid: docSnap.id, ...(docSnap.data() as any) } as any;
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return null;
+    }
+  },
+
+  async getArticlesByAuthor(authorId: string, count = 10) {
+    const path = ARTICLES_COLLECTION;
+    try {
+      const q = query(
+        collection(db, path),
+        where('status', '==', 'published'),
+        where('authorId', '==', authorId),
+        orderBy('createdAt', 'desc'),
+        limit(count)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Article));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return [];
     }
   }
 };

@@ -68,10 +68,17 @@ async function testConnection() {
     await getDocFromServer(doc(db, '_connection_test_', 'test'));
     console.log("Firestore connection successful.");
   } catch (error) {
+    const projectId = firebaseConfig.projectId;
+    const consoleLink = `https://console.firebase.google.com/project/${projectId}/firestore`;
+    
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Firestore connection failed: The client is offline. Please check your Firebase configuration and ensure the database is provisioned.");
+      console.error(`Firestore connection failed: The client is offline. 
+This usually means the database needs to be manually provisioned in the console.
+Please visit: ${consoleLink}
+1. Click "Create Database"
+2. Choose "europe-west2"
+3. Start in "Production Mode"`);
     } else {
-      // Use handleFirestoreError for the connection test as well
       try {
         handleFirestoreError(error, OperationType.GET, '_connection_test_/test');
       } catch (e) {
