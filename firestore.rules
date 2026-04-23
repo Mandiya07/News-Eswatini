@@ -197,6 +197,16 @@ service cloud.firestore {
              data.processedBy == request.auth.uid;
     }
 
+    function isValidBusiness(data) {
+      return data.keys().hasAll(['name', 'category', 'description', 'contactPhone', 'locations', 'isFeatured']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.category is string &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.contactPhone is string &&
+             data.locations is list && data.locations.size() > 0 &&
+             data.isFeatured is bool;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -252,6 +262,12 @@ service cloud.firestore {
     match /payouts/{payoutId} {
       allow read: if isAdmin();
       allow create: if isAdmin() && isValidPayout(incoming());
+    }
+
+    match /businesses/{businessId} {
+      allow read: if true;
+      allow create: if true && isValidBusiness(incoming()) && incoming().isFeatured == false;
+      allow update, delete: if isAdmin() || (isAuthenticated() && incoming().advertiserId == request.auth.uid);
     }
 
     match /_connection_test_/{testId} {

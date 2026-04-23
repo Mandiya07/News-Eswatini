@@ -6,13 +6,15 @@ import { Article } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { TINKHUNDLA_DATA } from '../constants';
+import AdBanner from '../components/ads/AdBanner';
 
 export default function Region() {
   const { region } = useParams<{ region: string }>();
   const [articles, setArticles] = useState<Article[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const regionKey = region ? region.charAt(0).toUpperCase() + region.slice(1) : '';
+  const regionKey = region ? region.charAt(0).toUpperCase() + region.slice(1).toLowerCase() : '';
   const constituencies = TINKHUNDLA_DATA[regionKey as keyof typeof TINKHUNDLA_DATA] || [];
 
   useEffect(() => {
@@ -20,8 +22,13 @@ export default function Region() {
       if (!region) return;
       setLoading(true);
       try {
-        const data = await newsService.getArticlesByRegion(region.charAt(0).toUpperCase() + region.slice(1));
+        // Query using the formatted Title Case key
+        const [data, fetchedAds] = await Promise.all([
+           newsService.getArticlesByRegion(regionKey),
+           newsService.getAdsForLocation(regionKey)
+        ]);
         setArticles(data);
+        setAds(fetchedAds);
       } catch (error) {
         console.error('Error fetching articles:', error);
       } finally {
@@ -30,7 +37,7 @@ export default function Region() {
     };
     fetchArticles();
     window.scrollTo(0, 0);
-  }, [region]);
+  }, [region, regionKey]);
 
   if (loading) {
     return (
@@ -213,13 +220,7 @@ export default function Region() {
               </div>
             </div>
 
-            <div className="aspect-[4/5] bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 p-8 text-center">
-              <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-zinc-400 mb-4">
-                <MapPin size={24} />
-              </div>
-              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-2">Local Advertisement</span>
-              <p className="text-xs text-zinc-500 font-medium">Reach your local audience in {region}.</p>
-            </div>
+            <AdBanner ads={ads} />
           </div>
         </div>
       </div>

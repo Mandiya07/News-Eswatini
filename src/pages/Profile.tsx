@@ -4,7 +4,7 @@ import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin, Twitter, Facebook, Instagram, Globe } from 'lucide-react';
 import { formatDate, cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
@@ -18,6 +18,14 @@ export default function Profile() {
   const [name, setName] = useState('');
   const [constituency, setConstituency] = useState('');
   const [videoBio, setVideoBio] = useState('');
+  const [officialTitle, setOfficialTitle] = useState('');
+  const [department, setDepartment] = useState('');
+  const [socials, setSocials] = useState({
+    twitter: '',
+    facebook: '',
+    instagram: '',
+    website: ''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +33,16 @@ export default function Profile() {
       setName(userData.name || user.displayName || '');
       setConstituency(userData.constituency || '');
       setVideoBio(userData.videoBio || '');
+      setOfficialTitle(userData.officialTitle || '');
+      setDepartment(userData.department || '');
+      if (userData.socials) {
+        setSocials({
+          twitter: userData.socials.twitter || '',
+          facebook: userData.socials.facebook || '',
+          instagram: userData.socials.instagram || '',
+          website: userData.socials.website || ''
+        });
+      }
     }
   }, [user, userData]);
 
@@ -36,7 +54,19 @@ export default function Profile() {
       await updateProfile(user, { displayName: name });
       const path = `users/${user.uid}`;
       try {
-        await updateDoc(doc(db, 'users', user.uid), { name, constituency, videoBio });
+        await updateDoc(doc(db, 'users', user.uid), { 
+          name, 
+          constituency, 
+          videoBio,
+          officialTitle,
+          department,
+          socials: {
+            twitter: socials.twitter,
+            facebook: socials.facebook,
+            instagram: socials.instagram,
+            website: socials.website
+          }
+        });
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, path);
       }
@@ -114,6 +144,11 @@ export default function Profile() {
                 <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-sm border border-zinc-100 dark:border-zinc-700">
                   <Shield size={14} className="text-rose-500" /> {userData?.role || 'Reader'}
                 </span>
+                {(userData?.role === 'admin' || userData?.role === 'ministry_admin') && userData.officialTitle && (
+                  <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-lg shadow-rose-600/20">
+                    <Shield size={14} /> {userData.officialTitle}
+                  </span>
+                )}
                 <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-sm border border-zinc-100 dark:border-zinc-700">
                   <Calendar size={14} className="text-rose-500" /> Joined {formatDate(userData?.createdAt?.toDate() || new Date())}
                 </span>
@@ -121,10 +156,28 @@ export default function Profile() {
 
               <button 
                 onClick={() => setIsEditing(!isEditing)}
-                className="w-full py-5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-zinc-950/10"
+                className="w-full py-5 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-zinc-950/10 mb-4"
               >
                 <Edit2 size={18} /> Edit Profile
               </button>
+
+              {(userData?.role === 'ministry_admin' || userData?.role === 'admin') && (
+                <button 
+                  onClick={() => navigate('/ministry-portal')}
+                  className="w-full py-5 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-rose-600/20 mb-4"
+                >
+                  <Shield size={18} /> Ministry Admin Portal
+                </button>
+              )}
+
+              {(userData?.role === 'editor' || userData?.role === 'admin') && (
+                <button 
+                  onClick={() => navigate('/editor-portal')}
+                  className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-2xl shadow-indigo-600/20"
+                >
+                  <Shield size={18} /> Editor Dashboard
+                </button>
+              )}
             </div>
 
             <div className="bg-zinc-950 text-white rounded-[3rem] p-12 shadow-2xl shadow-zinc-950/20 border border-white/5 relative overflow-hidden">
@@ -233,13 +286,117 @@ export default function Profile() {
                       </select>
                     </div>
 
-                    {isContributor && (
+                    {(userData?.role === 'admin' || userData?.role === 'ministry_admin') && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-zinc-200 dark:border-zinc-800">
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1 flex items-center gap-2">
+                            <Shield size={12} className="text-rose-600" /> Official Title
+                          </label>
+                          <input 
+                            type="text" 
+                            value={officialTitle}
+                            onChange={(e) => setOfficialTitle(e.target.value)}
+                            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-[1.5rem] px-8 py-5 text-sm font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                            placeholder="e.g. Director of Communications"
+                          />
+                        </div>
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1 flex items-center gap-2">
+                             <Shield size={12} className="text-rose-600" /> Department/Ministry
+                          </label>
+                          <input 
+                            type="text" 
+                            value={department}
+                            onChange={(e) => setDepartment(e.target.value)}
+                            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-[1.5rem] px-8 py-5 text-sm font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                            placeholder="e.g. Ministry of Tinkhundla"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Video Biography</label>
+                      {videoBio && (
+                        <div className="mb-4 aspect-video rounded-[1.5rem] overflow-hidden bg-black border border-zinc-200 dark:border-zinc-800 shadow-lg">
+                          <video 
+                            src={videoBio} 
+                            controls 
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      )}
                       <MediaUpload 
-                        label="Video Biography (Reporter Bio)"
+                        label={videoBio ? "Change Video Biography" : "Upload Video Biography"}
                         accept="video"
                         onUploadComplete={(url) => setVideoBio(url)}
+                        className="bg-white dark:bg-zinc-800 rounded-[1.5rem] border border-zinc-200 dark:border-zinc-800 p-2"
                       />
-                    )}
+                      <div className="pt-2">
+                        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1 opacity-60">Or paste a video URL</label>
+                        <input 
+                          type="url" 
+                          value={videoBio}
+                          onChange={(e) => setVideoBio(e.target.value)}
+                          className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-[1.5rem] px-8 py-4 text-xs font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all mt-2"
+                          placeholder="https://example.com/video.mp4"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1 mb-6">Social Media & Links</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                            <Twitter size={14} className="text-[#1DA1F2]" /> Twitter URL
+                          </label>
+                          <input 
+                            type="url" 
+                            value={socials.twitter}
+                            onChange={(e) => setSocials(prev => ({ ...prev, twitter: e.target.value }))}
+                            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-6 py-4 text-xs font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                            placeholder="https://twitter.com/yourhandle"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                            <Facebook size={14} className="text-[#1877F2]" /> Facebook URL
+                          </label>
+                          <input 
+                            type="url" 
+                            value={socials.facebook}
+                            onChange={(e) => setSocials(prev => ({ ...prev, facebook: e.target.value }))}
+                            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-6 py-4 text-xs font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                            placeholder="https://facebook.com/yourprofile"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                            <Instagram size={14} className="text-[#E4405F]" /> Instagram URL
+                          </label>
+                          <input 
+                            type="url" 
+                            value={socials.instagram}
+                            onChange={(e) => setSocials(prev => ({ ...prev, instagram: e.target.value }))}
+                            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-6 py-4 text-xs font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                            placeholder="https://instagram.com/yourhandle"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                            <Globe size={14} className="text-zinc-400" /> Website URL
+                          </label>
+                          <input 
+                            type="url" 
+                            value={socials.website}
+                            onChange={(e) => setSocials(prev => ({ ...prev, website: e.target.value }))}
+                            className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-6 py-4 text-xs font-medium focus:ring-4 focus:ring-rose-600/10 focus:border-rose-600 outline-none dark:text-white transition-all"
+                            placeholder="https://yourwebsite.com"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
                     <div className="space-y-4">
                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Email Address (Read Only)</label>

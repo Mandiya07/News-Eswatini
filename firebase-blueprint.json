@@ -122,6 +122,36 @@
         "processedBy": { "type": "string" }
       },
       "required": ["userId", "userName", "amount", "method", "accountNumber", "processedAt", "processedBy"]
+    },
+    "ServiceBusiness": {
+      "title": "ServiceBusiness",
+      "description": "Local service business listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "advertiserId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "imageURL": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "locations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "address": { "type": "string" },
+              "region": { "type": "string" },
+              "constituency": { "type": "string" },
+              "contactNumber": { "type": "string" }
+            }
+          }
+        },
+        "isFeatured": { "type": "boolean" },
+        "featuredUntil": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "category", "description", "contactPhone", "locations"]
     }
   },
   "firestore": {
@@ -131,6 +161,7 @@
     "/polls/{pollId}": { "schema": "Poll", "description": "Interactive polls" },
     "/submissions/{submissionId}": { "schema": "Submission", "description": "User-submitted stories" },
     "/payouts/{payoutId}": { "schema": "Payout", "description": "Payout records" },
+    "/businesses/{businessId}": { "schema": "ServiceBusiness", "description": "Local service businesses" },
     "/_connection_test_/{testId}": { "schema": "object", "description": "Connection test collection" }
   }
 }

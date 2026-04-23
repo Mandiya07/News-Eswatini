@@ -6,7 +6,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 // Error Handling Spec for Firestore Operations
@@ -73,11 +73,9 @@ async function testConnection() {
     
     if (error instanceof Error && error.message.includes('the client is offline')) {
       console.error(`Firestore connection failed: The client is offline. 
-This usually means the database needs to be manually provisioned in the console.
+This usually means the Firestore service or database needs to be enabled in your Firebase console.
 Please visit: ${consoleLink}
-1. Click "Create Database"
-2. Choose "europe-west2"
-3. Start in "Production Mode"`);
+Ensure that "Cloud Firestore" is enabled and a "(default)" database is created.`);
     } else {
       try {
         handleFirestoreError(error, OperationType.GET, '_connection_test_/test');

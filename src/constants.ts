@@ -23,3 +23,5 @@ export const TINKHUNDLA_DATA = {
 };
 
 export const ALL_TINKHUNDLA = Object.values(TINKHUNDLA_DATA).flat();
+
+export const REGIONS = Object.keys(TINKHUNDLA_DATA);

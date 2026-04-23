@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Clock, ChevronRight, Play, MessageSquare, Filter } from 'lucide-react';
+import { TrendingUp, Clock, ChevronRight, Play, MessageSquare, Filter, Shield } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article, Poll } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
@@ -10,19 +10,22 @@ export default function Home() {
   const [featured, setFeatured] = useState<Article[]>([]);
   const [latest, setLatest] = useState<Article[]>([]);
   const [trending, setTrending] = useState<Article[]>([]);
+  const [notices, setNotices] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [featuredData, latestResult] = await Promise.all([
+        const [featuredData, latestResult, noticesData] = await Promise.all([
           newsService.getFeaturedArticles(4),
-          newsService.getLatestArticles(12)
+          newsService.getLatestArticles(12),
+          newsService.getGovernmentNotices(4)
         ]);
 
         setFeatured(featuredData);
         setLatest(latestResult.articles);
         setTrending(latestResult.articles.slice(0, 5));
+        setNotices(noticesData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -90,9 +93,14 @@ export default function Home() {
                   <h1 className="serif text-4xl sm:text-6xl md:text-[5rem] font-bold text-zinc-950 dark:text-white leading-[1.05] tracking-tight mb-6 group-hover:underline decoration-1 underline-offset-8">
                     {featured[0].title}
                   </h1>
-                  <p className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed mb-8 max-w-3xl">
+                  <p className="text-lg md:text-xl text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed mb-4 max-w-3xl">
                     {truncate(featured[0].content, 250)}
                   </p>
+                  <div className="mb-8">
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-950 dark:text-white group-hover:text-rose-600 transition-colors flex items-center gap-2">
+                      Read Full Story <ChevronRight size={14} />
+                    </span>
+                  </div>
                   <div className="mt-auto text-xs font-bold uppercase tracking-widest text-zinc-500">
                     By {featured[0].authorName} • {formatDate(featured[0].createdAt)}
                   </div>
@@ -158,9 +166,14 @@ export default function Home() {
                   <h3 className="serif text-2xl font-bold dark:text-white leading-tight group-hover:underline decoration-1 underline-offset-4 mb-3">
                     {featured[1].title}
                   </h3>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium line-clamp-2">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium line-clamp-2 mb-4">
                     {truncate(featured[1].content, 120)}
                   </p>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-900 dark:text-white group-hover:text-rose-600 transition-colors flex items-center gap-1.5">
+                      Read More <ChevronRight size={12} />
+                    </span>
+                  </div>
                 </Link>
               </div>
             )}
@@ -188,6 +201,44 @@ export default function Home() {
                 <ChevronRight size={16} className="text-zinc-300 dark:text-zinc-700 group-hover:text-rose-600 group-hover:translate-x-1 transition-all" />
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* Ministry of Tinkhundla Gazette */}
+        <div className="mb-24 bg-rose-950 rounded-[3rem] p-12 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-rose-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-10 border-b border-white/10 pb-6">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                <Shield size={24} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black uppercase tracking-tighter leading-none mb-1">Government Gazette</h2>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-rose-300/80">Direct from the Ministry of Tinkhundla</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {notices.length > 0 ? (
+                notices.map(notice => (
+                  <Link key={notice.id} to={`/article/${notice.id}`} className="group space-y-4">
+                    <div className="text-[9px] font-black uppercase tracking-widest px-3 py-1 bg-white/10 rounded-full inline-block mb-2 border border-white/10">Official Notice</div>
+                    <h3 className="serif text-xl font-bold group-hover:text-rose-300 transition-colors leading-tight">{notice.title}</h3>
+                    <p className="text-sm text-white/60 font-medium line-clamp-2">{truncate(notice.content, 100)}</p>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-rose-400/80">{formatDate(notice.createdAt)}</div>
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full py-12 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                  <p className="text-sm font-bold uppercase tracking-widest text-white/40">No active government notices at this time.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-12 pt-8 border-t border-white/10 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
+              <span>Verified Ministerial Information Portal</span>
+              <Link to="/about" className="hover:text-white transition-colors flex items-center gap-2">How it works <ChevronRight size={14} /></Link>
+            </div>
           </div>
         </div>
 
@@ -227,6 +278,15 @@ export default function Home() {
                    <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium line-clamp-3 mb-4 flex-grow">
                      {truncate(article.content, 120)}
                    </p>
+                   <div className="mb-4">
+                     <Link 
+                       to={`/article/${article.id}`} 
+                       className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-900 dark:text-white hover:text-rose-600 transition-colors inline-flex items-center gap-1.5 group/btn"
+                     >
+                       Read Full Story 
+                       <ChevronRight size={12} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                     </Link>
+                   </div>
                    <div className="mt-auto text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                      By {article.authorName}
                    </div>

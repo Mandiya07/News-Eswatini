@@ -15,6 +15,12 @@ import Constituencies from './pages/Constituencies';
 import ConstituencyDetail from './pages/ConstituencyDetail';
 import AuthorProfile from './pages/AuthorProfile';
 import SubmitEvent from './pages/SubmitEvent';
+import Directory from './pages/Directory';
+import BusinessDetail from './pages/BusinessDetail';
+import RegisterBusiness from './pages/RegisterBusiness';
+import MinistryPortal from './pages/MinistryPortal';
+import EditorPortal from './pages/EditorPortal';
+import GovernmentGazette from './pages/GovernmentGazette';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -29,6 +35,9 @@ function App() {
             <Route path="/category/:category" element={<Category />} />
             <Route path="/region/:region" element={<Region />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/directory" element={<Directory />} />
+            <Route path="/directory/:id" element={<BusinessDetail />} />
+            <Route path="/register-business" element={<RegisterBusiness />} />
             <Route 
               path="/admin/*" 
               element={
@@ -37,6 +46,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+
             <Route 
               path="/submit-story" 
               element={
@@ -61,10 +71,27 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/ministry-portal" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'ministry_admin']}>
+                  <MinistryPortal />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/editor-portal" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'editor']}>
+                  <EditorPortal />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/nationwide" element={<Category category="nationwide" />} />
             <Route path="/constituencies" element={<Constituencies />} />
             <Route path="/constituency/:constituencyName" element={<ConstituencyDetail />} />
             <Route path="/author/:id" element={<AuthorProfile />} />
+            <Route path="/gazette" element={<GovernmentGazette />} />
           </Routes>
         </main>
         <Footer />

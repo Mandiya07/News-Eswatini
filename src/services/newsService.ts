@@ -20,12 +20,14 @@ import {
   QueryConstraint
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Article, Comment, Poll, Submission, Reply } from '../types';
+import { Article, Comment, Poll, Submission, Reply, ServiceBusiness, Ad } from '../types';
 import { DEMO_ARTICLES, DEMO_POLLS } from '../constants/demoData';
 
 const ARTICLES_COLLECTION = 'articles';
 const POLLS_COLLECTION = 'polls';
 const SUBMISSIONS_COLLECTION = 'submissions';
+const ADS_COLLECTION = 'ads';
+const BUSINESSES_COLLECTION = 'businesses';
 
 // Helper to convert demo articles to proper local Article objects
 const getLocalDemoArticles = (): Article[] => {
@@ -137,6 +139,33 @@ export const newsService = {
       handleFirestoreError(error, OperationType.GET, path);
       return [];
     }
+  },
+
+  async getBusinesses(queryConstraints: QueryConstraint[] = []) {
+    const path = BUSINESSES_COLLECTION;
+    try {
+      const q = query(collection(db, path), ...queryConstraints, orderBy('isFeatured', 'desc'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as ServiceBusiness));
+    } catch (error) {
+      console.error("Error fetching businesses:", error);
+      return [];
+    }
+  },
+
+  async getBusinessById(id: string) {
+    const docRef = doc(db, BUSINESSES_COLLECTION, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...(docSnap.data() as any) } as ServiceBusiness;
+    }
+    return null;
+  },
+
+  async registerBusiness(businessData: Omit<ServiceBusiness, 'id'>) {
+    return await addDoc(collection(db, BUSINESSES_COLLECTION), {
+      ...businessData
+    });
   },
 
   async getArticleById(id: string) {
@@ -301,6 +330,21 @@ export const newsService = {
     }
   },
 
+  async getPendingSubmissionCount(userId: string): Promise<number> {
+    try {
+      const q = query(
+        collection(db, SUBMISSIONS_COLLECTION),
+        where('submitterId', '==', userId),
+        where('status', '==', 'pending')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.size;
+    } catch (error) {
+      console.warn("Could not fetch pending submission count, assuming 0:", error);
+      return 0;
+    }
+  },
+
   async submitEvent(event: Omit<import('../types').CommunityEvent, 'id' | 'createdAt' | 'status'>) {
     const path = 'events';
     try {
@@ -345,6 +389,51 @@ export const newsService = {
       return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Article));
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, path);
+      return [];
+    }
+  },
+
+  async getAdsForLocation(region?: string, constituency?: string) {
+    const path = 'ads';
+    try {
+      let q = query(
+        collection(db, path),
+        where('isActive', '==', true),
+        orderBy('priority', 'desc'),
+        limit(5)
+      );
+
+      const snapshot = await getDocs(q);
+      let ads = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Ad));
+
+      if (region) {
+        ads = ads.filter(ad => !ad.targetRegion || ad.targetRegion === region);
+      }
+      if (constituency) {
+        ads = ads.filter(ad => !ad.targetConstituency || ad.targetConstituency === constituency);
+      }
+
+      return ads;
+    } catch (error) {
+      console.warn("Could not fetch ads:", error);
+      return [];
+    }
+  },
+
+  async getGovernmentNotices(count = 5) {
+    const path = ARTICLES_COLLECTION;
+    try {
+      const q = query(
+        collection(db, path),
+        where('status', '==', 'published'),
+        where('isGovernmentNotice', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(count)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Article));
+    } catch (error) {
+      console.warn("Falling back to empty government notices");
       return [];
     }
   }

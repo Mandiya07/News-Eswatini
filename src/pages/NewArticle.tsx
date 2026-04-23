@@ -19,7 +19,8 @@ export default function NewArticle() {
     region: '',
     status: 'draft',
     imageURL: '',
-    videoURL: ''
+    videoURL: '',
+    contentLabel: 'Independent'
   });
 
   const categories = ['News', 'Politics', 'Sports', 'Business', 'Health', 'Education', 'Community'];
@@ -136,6 +137,19 @@ export default function NewArticle() {
                 {regions.map(reg => <option key={reg} value={reg}>{reg}</option>)}
               </select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Content Label</label>
+            <select 
+              value={formData.contentLabel}
+              onChange={e => setFormData({ ...formData, contentLabel: e.target.value as any })}
+              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-rose-600 transition-all dark:text-white font-medium"
+            >
+              <option value="Independent">Independent</option>
+              <option value="Sponsored">Sponsored</option>
+              <option value="Partnership">Partnership</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

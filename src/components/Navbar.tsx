@@ -11,7 +11,20 @@ import { TINKHUNDLA_DATA } from '../constants';
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const { user, userData, loading } = useAuth();
+  
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (openMenu && !(e.target as HTMLElement).closest('.nav-menu-container')) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [openMenu]);
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check local storage first
     const savedMode = localStorage.getItem('theme');
@@ -123,8 +136,8 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-2">
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center gap-2">
               <Link 
                 to="/nationwide" 
                 className={cn(
@@ -139,79 +152,123 @@ export default function Navbar() {
                 Nationwide
                 {location.pathname !== '/nationwide' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
               </Link>
+
+              <Link 
+                to="/directory" 
+                className={cn(
+                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  location.pathname.startsWith('/directory') 
+                    ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
+                    : scrolled
+                      ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                )}
+              >
+                Services Directory
+                {!location.pathname.startsWith('/directory') && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
+              </Link>
+
+              <Link 
+                to="/gazette" 
+                className={cn(
+                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  location.pathname === '/gazette' 
+                    ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
+                    : scrolled
+                      ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                )}
+              >
+                Gazette
+                {location.pathname !== '/gazette' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
+              </Link>
               
-              <div className="relative group">
-                <button className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all group/nav relative",
-                  scrolled
-                    ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
-                    : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
-                )}>
-                  Regions <ChevronDown size={12} className="group-hover:rotate-180 transition-transform duration-500" />
+              <div className="relative nav-menu-container">
+                <button 
+                  onClick={() => setOpenMenu(openMenu === 'regions' ? null : 'regions')}
+                  aria-expanded={openMenu === 'regions'}
+                  aria-controls="regions-menu"
+                  className={cn(
+                    "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all group/nav relative",
+                    scrolled
+                      ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                  )}>
+                  Regions <ChevronDown size={12} className={cn("transition-transform duration-500", openMenu === 'regions' ? "rotate-180" : "")} />
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover:scale-100 transition-transform"></span>
                 </button>
-                <div className="absolute top-full left-0 mt-3 w-64 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-3xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-500 translate-y-4 group-hover:translate-y-0 p-3 overflow-hidden z-50">
-                  <div className="grid grid-cols-1 gap-1">
-                    {regions.map(region => (
-                      <Link 
-                        key={region} 
-                        to={`/region/${region.toLowerCase()}`} 
-                        className="flex items-center justify-between px-4 py-3 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-2xl transition-all dark:text-zinc-300 group/item"
-                      >
-                        <span className="group-hover/item:translate-x-1 transition-transform">{region}</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 group-hover/item:bg-rose-500 transition-colors"></div>
-                      </Link>
-                    ))}
+                {openMenu === 'regions' && (
+                  <div id="regions-menu" className="absolute top-full left-0 mt-3 w-64 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-3xl p-3 z-50">
+                    <div className="grid grid-cols-1 gap-1">
+                      {regions.map(region => (
+                        <Link 
+                          key={region} 
+                          to={`/region/${region.toLowerCase()}`} 
+                          className="flex items-center justify-between px-4 py-3 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-2xl transition-all dark:text-zinc-300 group/item"
+                          onClick={() => setOpenMenu(null)}
+                        >
+                          <span className="group-hover/item:translate-x-1 transition-transform">{region}</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 group-hover/item:bg-rose-500 transition-colors"></div>
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              <div className="relative group">
-                <button className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all group/nav relative",
-                  scrolled
-                    ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
-                    : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
-                )}>
-                  Constituencies <ChevronDown size={12} className="group-hover:rotate-180 transition-transform duration-500" />
+              <div className="relative nav-menu-container">
+                <button 
+                  onClick={() => setOpenMenu(openMenu === 'constituencies' ? null : 'constituencies')}
+                  aria-expanded={openMenu === 'constituencies'}
+                  aria-controls="constituencies-menu"
+                  className={cn(
+                    "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all group/nav relative",
+                    scrolled
+                      ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                  )}>
+                  Constituencies <ChevronDown size={12} className={cn("transition-transform duration-500", openMenu === 'constituencies' ? "rotate-180" : "")} />
                   <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover:scale-100 transition-transform"></span>
                 </button>
-                <div className="absolute top-full left-0 mt-3 w-80 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-3xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-500 translate-y-4 group-hover:translate-y-0 p-5 overflow-hidden flex flex-col z-50">
-                  <div className="relative mb-5">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-                    <input 
-                      type="text" 
-                      placeholder="Find your constituency..." 
-                      value={constituencySearch}
-                      onChange={(e) => setConstituencySearch(e.target.value)}
-                      className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-11 pr-4 py-3 text-xs font-medium focus:ring-2 focus:ring-rose-600 outline-none dark:text-white transition-all"
-                    />
-                  </div>
-                  <div className="max-h-[50vh] overflow-y-auto no-scrollbar">
-                    {Object.entries(TINKHUNDLA_DATA).map(([region, tinkhundlaList]) => {
-                      const filteredList = tinkhundlaList.filter(t => t.toLowerCase().includes(constituencySearch.toLowerCase()));
-                      if (filteredList.length === 0) return null;
-                      
-                      return (
-                        <div key={region} className="mb-6 last:mb-0">
-                          <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-3 px-3">{region}</p>
-                          <div className="grid grid-cols-1 gap-1">
-                            {filteredList.map(tinkhundla => (
-                              <Link 
-                                key={tinkhundla} 
-                                to={`/constituency/${tinkhundla.toLowerCase().replace(/\s+/g, '-')}`} 
-                                className="flex items-center justify-between px-3 py-2.5 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-all dark:text-zinc-300 group/item"
-                              >
-                                <span className="group-hover/item:translate-x-1 transition-transform">{tinkhundla}</span>
-                                <span className="text-[9px] font-black text-zinc-300 dark:text-zinc-600 uppercase tracking-widest">{region.substring(0, 3)}</span>
-                              </Link>
-                            ))}
+                {openMenu === 'constituencies' && (
+                  <div id="constituencies-menu" className="absolute top-full left-0 mt-3 w-80 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-3xl p-5 z-50">
+                    <div className="relative mb-5">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="Find your constituency..." 
+                        value={constituencySearch}
+                        onChange={(e) => setConstituencySearch(e.target.value)}
+                        className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl pl-11 pr-4 py-3 text-xs font-medium focus:ring-2 focus:ring-rose-600 outline-none dark:text-white transition-all"
+                      />
+                    </div>
+                    <div className="max-h-[50vh] overflow-y-auto no-scrollbar">
+                      {Object.entries(TINKHUNDLA_DATA).map(([region, tinkhundlaList]) => {
+                        const filteredList = tinkhundlaList.filter(t => t.toLowerCase().includes(constituencySearch.toLowerCase()));
+                        if (filteredList.length === 0) return null;
+                        
+                        return (
+                          <div key={region} className="mb-6 last:mb-0">
+                            <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-3 px-3">{region}</p>
+                            <div className="grid grid-cols-1 gap-1">
+                              {filteredList.map(tinkhundla => (
+                                <Link 
+                                  key={tinkhundla} 
+                                  to={`/constituency/${tinkhundla.toLowerCase().replace(/\s+/g, '-')}`} 
+                                  className="flex items-center justify-between px-3 py-2.5 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-all dark:text-zinc-300 group/item"
+                                  onClick={() => setOpenMenu(null)}
+                                >
+                                  <span className="group-hover/item:translate-x-1 transition-transform">{tinkhundla}</span>
+                                  <span className="text-[9px] font-black text-zinc-300 dark:text-zinc-600 uppercase tracking-widest">{region.substring(0, 3)}</span>
+                                </Link>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -319,7 +376,8 @@ export default function Navbar() {
             <div className="p-6 space-y-8">
               <div className="grid grid-cols-2 gap-4">
                 <Link to="/nationwide" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-900 rounded-2xl dark:text-zinc-300 shadow-sm border border-zinc-100 dark:border-zinc-800">Nationwide</Link>
-                <Link to="/constituencies" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-900 rounded-2xl dark:text-zinc-300 shadow-sm border border-zinc-100 dark:border-zinc-800">Constituencies</Link>
+                <Link to="/gazette" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-900 rounded-2xl dark:text-zinc-300 shadow-sm border border-zinc-100 dark:border-zinc-800">Gazette</Link>
+                <Link to="/directory" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-2xl shadow-sm border border-rose-100 dark:border-rose-800 col-span-2">Local Services Directory</Link>
               </div>
               
               <div className="space-y-4">

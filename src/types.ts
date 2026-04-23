@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'editor' | 'reporter' | 'reader';
+export type UserRole = 'admin' | 'editor' | 'reporter' | 'reader' | 'ministry_admin';
 
 export interface User {
   uid: string;
@@ -21,6 +21,9 @@ export interface User {
   totalViews?: number;
   articleCount?: number;
   reputationPoints?: number;
+  isOfficial?: boolean;
+  officialTitle?: string;
+  department?: string;
   paymentDetails?: {
     method: 'mobile_money' | 'bank_transfer';
     accountNumber: string;
@@ -51,9 +54,25 @@ export interface Article {
   breaking?: boolean;
   imageURL?: string;
   videoURL?: string;
+  isGovernmentNotice?: boolean;
+  // Advertisement fields
   // Contributor fields
   earningsGenerated?: number;
   payoutStatus?: 'pending' | 'paid';
+  contentLabel?: 'Independent' | 'Sponsored' | 'Partnership';
+}
+
+export interface Ad {
+  id: string;
+  advertiserName: string;
+  imageURL: string;
+  linkURL: string;
+  targetRegion?: string;
+  targetConstituency?: string;
+  startDate: any;
+  endDate: any;
+  isActive: boolean;
+  priority: 'high' | 'normal' | 'low';
 }
 
 export interface Comment {
@@ -88,6 +107,7 @@ export interface Poll {
 
 export interface Submission {
   id: string;
+  submitterId: string;
   title: string;
   content: string;
   submitterName: string;
@@ -125,4 +145,34 @@ export interface CommunityEvent {
   submitterName: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  plan: 'basic' | 'supporter' | 'patron';
+  status: 'active' | 'canceled' | 'past_due';
+  startDate: any;
+  nextPaymentDate: any;
+}
+
+export interface BusinessLocation {
+  address: string;
+  region: string;
+  constituency: string;
+  contactNumber?: string;
+}
+
+export interface ServiceBusiness {
+  id: string;
+  advertiserId?: string; // Links to Advertiser/User
+  name: string;
+  category: string;
+  description: string;
+  imageURL: string;
+  contactPhone: string;
+  contactEmail: string;
+  locations: BusinessLocation[];
+  isFeatured: boolean;
+  featuredUntil?: any;
 }

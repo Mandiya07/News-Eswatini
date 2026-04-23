@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check } from 'lucide-react';
+import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article, Comment } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
@@ -206,6 +206,24 @@ export default function ArticleDetail() {
             <Link to="/" className="hover:text-rose-600 transition-colors">Home</Link>
             <span className="text-zinc-300 dark:text-zinc-700">/</span>
             <Link to={`/category/${article.category.toLowerCase()}`} className="hover:text-rose-600 transition-colors">{article.category}</Link>
+            {article.isGovernmentNotice && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-600/20">
+                  <Shield size={10} /> Official Government Notice
+                </span>
+              </>
+            )}
+            {article.contentLabel && (
+              <span className={cn(
+                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                article.contentLabel === 'Independent' ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                article.contentLabel === 'Sponsored' ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+              )}>
+                {article.contentLabel}
+              </span>
+            )}
             {article.region && (
                <>
                  <span className="text-zinc-300 dark:text-zinc-700">/</span>
