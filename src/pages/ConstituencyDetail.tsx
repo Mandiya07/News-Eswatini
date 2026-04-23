@@ -90,29 +90,38 @@ export default function ConstituencyDetail() {
                 transition={{ delay: idx * 0.05 }}
                 className="group flex flex-col bg-white dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-zinc-950/10 transition-all duration-500"
               >
-                <Link to={`/article/${article.id}`} className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                  <img 
-                    src={article.imageURL || `https://picsum.photos/seed/${article.id}/600/400`} 
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg shadow-rose-600/20">
+                <div className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                  <Link to={`/article/${article.id}`} className="block w-full h-full focus:outline-none z-0">
+                    <img 
+                      src={article.imageURL || `https://picsum.photos/seed/${article.id}/600/400`} 
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8 flex flex-col justify-center items-center text-center z-10 pointer-events-none">
+                      <h4 className="text-lg font-black uppercase tracking-tighter mb-4 dark:text-white line-clamp-2">{article.title}</h4>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-6">{article.content}</p>
+                    </div>
+                  </Link>
+                  <div className="absolute top-4 left-4 z-20">
+                    <Link 
+                      to={`/category/${article.category?.toLowerCase() || ''}`}
+                      className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg shadow-rose-600/20 hover:bg-rose-700 transition-colors block"
+                    >
                       {article.category}
-                    </span>
+                    </Link>
                   </div>
-                  {/* Hover Preview */}
-                  <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8 flex flex-col justify-center items-center text-center z-10 pointer-events-none">
-                    <h4 className="text-lg font-black uppercase tracking-tighter mb-4 dark:text-white line-clamp-2">{article.title}</h4>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-6">{article.content}</p>
-                  </div>
-                </Link>
+                </div>
                 <div className="p-8 flex-1 flex flex-col">
                   <div className="flex items-center gap-4 text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-4">
                     <span className="flex items-center gap-1.5"><Clock size={12} className="text-rose-500" /> {formatDate(article.createdAt)}</span>
                     <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
-                    <span className="text-rose-600">{article.category}</span>
+                    <Link 
+                      to={`/category/${article.category?.toLowerCase() || ''}`}
+                      className="text-rose-600 hover:text-rose-700 transition-colors"
+                    >
+                      {article.category}
+                    </Link>
                   </div>
                   <Link to={`/article/${article.id}`} className="flex-1">
                     <h3 className="text-xl font-black leading-tight dark:text-zinc-100 group-hover:text-rose-600 transition-colors mb-4">

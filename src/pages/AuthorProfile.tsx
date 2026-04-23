@@ -159,33 +159,40 @@ export default function AuthorProfile() {
                   transition={{ delay: idx * 0.1 }}
                   className="group"
                 >
-                  <Link to={`/article/${article.id}`} className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                    <div className="md:col-span-4 aspect-[4/3] rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 shadow-lg shadow-zinc-950/5">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                    <Link to={`/article/${article.id}`} className="md:col-span-4 aspect-[4/3] rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 shadow-lg shadow-zinc-950/5 focus:outline-none">
                       <img 
                         src={article.imageURL || `https://picsum.photos/seed/${article.id}/600/400`} 
                         alt={article.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         referrerPolicy="no-referrer"
                       />
-                    </div>
+                    </Link>
                     <div className="md:col-span-8 flex flex-col justify-center">
                       <div className="flex items-center gap-3 mb-3">
-                        <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">{article.category}</span>
+                        <Link 
+                          to={`/category/${article.category?.toLowerCase() || ''}`}
+                          className="text-[10px] font-black text-rose-600 hover:text-rose-700 uppercase tracking-widest transition-colors"
+                        >
+                          {article.category}
+                        </Link>
                         <span className="w-1 h-1 rounded-full bg-zinc-200 dark:bg-zinc-800"></span>
                         <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{formatDate(article.createdAt)}</span>
                       </div>
-                      <h3 className="text-2xl font-black dark:text-white mb-4 group-hover:text-rose-600 transition-colors leading-tight tracking-tight uppercase">
-                        {article.title}
-                      </h3>
-                      <p className="text-zinc-500 dark:text-zinc-400 font-medium line-clamp-2 mb-6">
-                        {article.content.replace(/[#*`]/g, '').substring(0, 150)}...
-                      </p>
+                      <Link to={`/article/${article.id}`}>
+                        <h3 className="text-2xl font-black dark:text-white mb-4 group-hover:text-rose-600 transition-colors leading-tight tracking-tight uppercase">
+                          {article.title}
+                        </h3>
+                        <p className="text-zinc-500 dark:text-zinc-400 font-medium line-clamp-2 mb-6">
+                          {article.content.replace(/[#*`]/g, '').substring(0, 150)}...
+                        </p>
+                      </Link>
                       <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-zinc-400">
                         <span className="flex items-center gap-1.5"><Share2 size={12} /> {article.views || 0} Views</span>
                         <span className="flex items-center gap-1.5"><BookOpen size={12} /> 8 min read</span>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 </motion.article>
               ))}
 

@@ -484,7 +484,12 @@ export default function ArticleDetail() {
                       <img src={`https://picsum.photos/seed/n${i}/400/266`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                     </div>
                     <div className="space-y-2">
-                      <span className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em]">{article.category}</span>
+                      <Link 
+                        to={`/category/${article.category?.toLowerCase() || ''}`}
+                        className="inline-block text-[10px] font-black text-rose-600 hover:text-rose-700 uppercase tracking-[0.2em] transition-colors"
+                      >
+                        {article.category}
+                      </Link>
                       <h4 className="serif text-xl font-bold dark:text-white leading-snug group-hover:underline decoration-1 underline-offset-4 line-clamp-3">
                         More analysis falling under the {article.category} banner in Eswatini
                       </h4>

@@ -9,7 +9,12 @@ import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 export default function Category({ category: propCategory }: { category?: string }) {
   const { category: paramCategory } = useParams<{ category: string }>();
-  const category = propCategory || paramCategory || '';
+  const rawCategory = propCategory || paramCategory || '';
+  const categoryLower = rawCategory.toLowerCase();
+  
+  // Create Title Case version for querying db
+  const formattedCategory = rawCategory.charAt(0).toUpperCase() + rawCategory.slice(1).toLowerCase();
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -21,17 +26,18 @@ export default function Category({ category: propCategory }: { category?: string
     else setLoading(true);
     
     try {
+      const isSpecial = categoryLower === 'nationwide' || categoryLower === 'constituency';
       const { articles: newArticles, lastVisible: nextLastVisible } = await newsService.getLatestArticles(
         9, 
-        category === 'nationwide' || category === 'constituency' ? undefined : category,
+        isSpecial ? undefined : formattedCategory,
         isLoadMore ? lastVisible : undefined
       );
 
       // Filter if it's nationwide or constituency (mock logic for now)
       let filtered = newArticles;
-      if (category === 'nationwide') {
+      if (categoryLower === 'nationwide') {
         filtered = newArticles.filter(a => !a.region);
-      } else if (category === 'constituency') {
+      } else if (categoryLower === 'constituency') {
         filtered = newArticles.filter(a => a.inkhundla);
       }
       
@@ -53,7 +59,7 @@ export default function Category({ category: propCategory }: { category?: string
   useEffect(() => {
     fetchArticles();
     window.scrollTo(0, 0);
-  }, [category]);
+  }, [rawCategory]);
 
   if (loading) {
     return (
@@ -74,7 +80,7 @@ export default function Category({ category: propCategory }: { category?: string
           >
             <Link to="/" className="hover:text-rose-600 flex items-center gap-1"><ArrowLeft size={12} /> Home</Link>
             <ChevronRight size={10} />
-            <span className="text-zinc-900 dark:text-zinc-100">{category}</span>
+            <span className="text-zinc-900 dark:text-zinc-100">{rawCategory}</span>
           </motion.div>
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
@@ -82,9 +88,9 @@ export default function Category({ category: propCategory }: { category?: string
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter dark:text-white mb-4 leading-none">{category}</h1>
+              <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter dark:text-white mb-4 leading-none">{rawCategory}</h1>
               <p className="text-zinc-500 dark:text-zinc-400 max-w-2xl font-medium text-lg">
-                Stay updated with the latest {category} news and stories from across the Kingdom of Eswatini.
+                Stay updated with the latest {rawCategory} news and stories from across the Kingdom of Eswatini.
               </p>
             </motion.div>
             <motion.button 
@@ -107,24 +113,28 @@ export default function Category({ category: propCategory }: { category?: string
                 transition={{ delay: idx * 0.05 }}
                 className="group flex flex-col bg-white dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-zinc-950/10 transition-all duration-500"
               >
-                <Link to={`/article/${article.id}`} className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                  <img 
-                    src={article.imageURL || `https://picsum.photos/seed/${article.id}/600/400`} 
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg shadow-rose-600/20">
+                <div className="relative aspect-video overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                  <Link to={`/article/${article.id}`} className="block w-full h-full focus:outline-none z-0">
+                    <img 
+                      src={article.imageURL || `https://picsum.photos/seed/${article.id}/600/400`} 
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8 flex flex-col justify-center items-center text-center z-10 pointer-events-none">
+                      <h4 className="text-lg font-black uppercase tracking-tighter mb-4 dark:text-white line-clamp-2">{article.title}</h4>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-6">{article.content}</p>
+                    </div>
+                  </Link>
+                  <div className="absolute top-4 left-4 z-20">
+                    <Link 
+                      to={`/category/${article.category?.toLowerCase() || ''}`}
+                      className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg shadow-rose-600/20 hover:bg-rose-700 transition-colors block"
+                    >
                       {article.category}
-                    </span>
+                    </Link>
                   </div>
-                  {/* Hover Preview */}
-                  <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-8 flex flex-col justify-center items-center text-center z-10 pointer-events-none">
-                    <h4 className="text-lg font-black uppercase tracking-tighter mb-4 dark:text-white line-clamp-2">{article.title}</h4>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-6">{article.content}</p>
-                  </div>
-                </Link>
+                </div>
                 <div className="p-8 flex-1 flex flex-col">
                   <div className="flex items-center gap-4 text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-4">
                     <span className="flex items-center gap-1.5"><Clock size={12} className="text-rose-500" /> {formatDate(article.createdAt)}</span>
