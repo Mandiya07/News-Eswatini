@@ -183,7 +183,19 @@ service cloud.firestore {
              data.submitterName is string &&
              isValidEmail(data.submitterEmail) &&
              data.status in ['pending', 'reviewed', 'rejected'] &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             (!('bountyId' in data) || data.bountyId is string);
+    }
+
+    function isValidBounty(data) {
+      return data.keys().hasAll(['title', 'description', 'reward', 'status', 'createdAt', 'constituency', 'submissionsCount']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             data.reward is number && data.reward >= 0 &&
+             data.status in ['open', 'completed', 'expired'] &&
+             data.createdAt is timestamp &&
+             data.constituency is string &&
+             data.submissionsCount is number;
     }
 
     function isValidPayout(data) {
@@ -268,6 +280,13 @@ service cloud.firestore {
       allow read: if true;
       allow create: if true && isValidBusiness(incoming()) && incoming().isFeatured == false;
       allow update, delete: if isAdmin() || (isAuthenticated() && incoming().advertiserId == request.auth.uid);
+    }
+
+    match /bounties/{bountyId} {
+      allow read: if true;
+      allow create: if isEditor() && isValidBounty(incoming());
+      allow update: if isEditor() && isValidBounty(incoming()) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /_connection_test_/{testId} {

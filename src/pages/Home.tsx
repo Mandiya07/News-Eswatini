@@ -279,13 +279,10 @@ export default function Home() {
                      {truncate(article.content, 120)}
                    </p>
                    <div className="mb-4">
-                     <Link 
-                       to={`/article/${article.id}`} 
-                       className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-900 dark:text-white hover:text-rose-600 transition-colors inline-flex items-center gap-1.5 group/btn"
-                     >
+                     <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-900 dark:text-white hover:text-rose-600 transition-colors inline-flex items-center gap-1.5 group/btn cursor-pointer">
                        Read Full Story 
                        <ChevronRight size={12} className="group-hover/btn:translate-x-0.5 transition-transform" />
-                     </Link>
+                     </div>
                    </div>
                    <div className="mt-auto text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                      By {article.authorName}

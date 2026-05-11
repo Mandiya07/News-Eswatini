@@ -21,6 +21,7 @@ import {
   Send
 } from 'lucide-react';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { newsService } from '../services/newsService';
 import { 
   collection, 
   getDocs, 
@@ -66,6 +67,7 @@ export default function Admin() {
     { icon: FileText, label: 'Articles', path: '/admin/articles', roles: ['admin', 'editor', 'reporter'] },
     { icon: Send, label: 'Submissions', path: '/admin/submissions', roles: ['admin', 'editor'] },
     { icon: Users, label: 'Users', path: '/admin/users', roles: ['admin'] },
+    { icon: Users, label: 'Editorial Team', path: '/admin/team', roles: ['admin'] },
     { icon: BarChart3, label: 'Contributors', path: '/admin/contributors', roles: ['admin', 'editor'] },
     { icon: Settings, label: 'Settings', path: '/admin/settings', roles: ['admin'] },
   ].filter(item => item.roles.includes(userData.role));
@@ -175,12 +177,90 @@ export default function Admin() {
                 {isEditor && <Route path="/submissions" element={<SubmissionsList />} />}
                 {isEditor && <Route path="/contributors" element={<ContributorsList />} />}
                 {isAdmin && <Route path="/users" element={<UsersList />} />}
+                {isAdmin && <Route path="/team" element={<EditorialTeam />} />}
                 {isAdmin && <Route path="/settings" element={<div className="p-20 text-center text-zinc-400 font-black uppercase tracking-widest text-xs">Settings coming soon.</div>} />}
               </Routes>
             </motion.div>
           </AnimatePresence>
         </div>
       </main>
+    </div>
+  );
+}
+
+function EditorialTeam() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const q = query(
+        collection(db, 'users'), 
+        where('role', 'in', ['reporter', 'editor'])
+      );
+      const snapshot = await getDocs(q);
+      setUsers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
+      setLoading(false);
+    };
+    fetchUsers();
+  }, []);
+
+  const updateReporterRegion = async (userId: string, region: string) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), { region });
+      setUsers(users.map(u => u.uid === userId ? { ...u, region } : u));
+      toast.success('Region updated for reporter');
+    } catch (e) {
+      toast.error('Failed to update region');
+    }
+  };
+
+  const reporters = users.filter(u => u.role === 'reporter');
+  const editors = users.filter(u => u.role === 'editor');
+  const regions = ['Hhohho', 'Manzini', 'Lubombo', 'Shiselweni'];
+
+  return (
+    <div className="space-y-12">
+      <div className="bg-white dark:bg-zinc-900/50 p-10 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm">
+        <h3 className="text-2xl font-black uppercase tracking-tighter mb-8 dark:text-white">Editorial Team Structure</h3>
+        <p className="text-zinc-500 mb-10">Manage regional coverage and editorial oversight.</p>
+        
+        <div className="space-y-10">
+          <div>
+            <h4 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-6">Editor-in-Chief</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {editors.map(editor => (
+                <div key={editor.uid} className="bg-zinc-50 dark:bg-zinc-800/30 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700">
+                  <p className="font-black text-lg dark:text-white">{editor.name}</p>
+                  <p className="text-xs font-bold text-zinc-400 mt-1">{editor.email}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-sm font-black uppercase tracking-widest text-zinc-400 mb-6">Regional Reporters</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {reporters.map(reporter => (
+                <div key={reporter.uid} className="bg-zinc-50 dark:bg-zinc-800/30 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-700 flex justify-between items-center">
+                  <div>
+                    <p className="font-black text-lg dark:text-white">{reporter.name}</p>
+                    <p className="text-xs font-bold text-zinc-400 mt-1">{reporter.email}</p>
+                  </div>
+                  <select 
+                    value={reporter.region || ''}
+                    onChange={(e) => updateReporterRegion(reporter.uid, e.target.value)}
+                    className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl outline-none"
+                  >
+                    <option value="">Assign Region</option>
+                    {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -400,20 +480,22 @@ function ContributorsList() {
 }
 
 function DashboardOverview() {
-  const [stats, setStats] = useState({ articles: 0, views: 0, comments: 0, users: 0, totalEarnings: 0 });
+  const [stats, setStats] = useState({ articles: 0, views: 0, comments: 0, users: 0, totalEarnings: 0, pendingSubmissions: 0 });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const articlesSnap = await getDocs(collection(db, 'articles'));
-        const usersSnap = await getDocs(collection(db, 'users'));
+        const [articlesSnap, usersSnap, pendingSubmissions, totalComments] = await Promise.all([
+          getDocs(collection(db, 'articles')),
+          getDocs(collection(db, 'users')),
+          newsService.getGlobalPendingSubmissionCount(),
+          newsService.getTotalCommentsCount()
+        ]);
         
         let totalViews = 0;
-        let totalComments = 0;
         let totalEarnings = 0;
         articlesSnap.forEach(doc => {
           totalViews += doc.data().views || 0;
-          totalComments += doc.data().commentsCount || 0;
           totalEarnings += doc.data().earningsGenerated || 0;
         });
 
@@ -422,7 +504,8 @@ function DashboardOverview() {
           views: totalViews,
           comments: totalComments,
           users: usersSnap.size,
-          totalEarnings
+          totalEarnings,
+          pendingSubmissions
         });
       } catch (error) {
         console.error('Stats fetch error:', error);
@@ -432,10 +515,10 @@ function DashboardOverview() {
   }, []);
 
   const statCards = [
-    { label: 'Total Articles', value: stats.articles, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-600/10' },
-    { label: 'Total Views', value: stats.views.toLocaleString(), icon: Eye, color: 'text-emerald-600', bg: 'bg-emerald-600/10' },
-    { label: 'Total Payouts', value: `SZL ${stats.totalEarnings.toFixed(2)}`, icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-600/10' },
-    { label: 'Active Users', value: stats.users, icon: Users, color: 'text-amber-600', bg: 'bg-amber-600/10' },
+    { label: 'Published Articles', value: stats.articles, icon: FileText, color: 'text-rose-600', bg: 'bg-rose-600/10', trend: '+8%' },
+    { label: 'Pending Submissions', value: stats.pendingSubmissions, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-600/10', trend: 'New' },
+    { label: 'Community Comments', value: stats.comments.toLocaleString(), icon: MessageSquare, color: 'text-indigo-600', bg: 'bg-indigo-600/10', trend: '+15%' },
+    { label: 'Economic Contribution (SZL)', value: `SZL ${stats.totalEarnings.toFixed(2)}`, icon: BarChart3, color: 'text-emerald-600', bg: 'bg-emerald-600/10', trend: '+22%' },
   ];
 
   return (
@@ -445,16 +528,16 @@ function DashboardOverview() {
           <motion.div 
             key={stat.label} 
             whileHover={{ y: -5 }}
-            className="bg-zinc-50 dark:bg-zinc-900/50 p-8 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm group"
+            className="bg-white dark:bg-zinc-900/50 p-8 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 shadow-sm group hover:border-rose-200 dark:hover:border-rose-900/50 transition-colors"
           >
             <div className="flex items-center justify-between mb-8">
               <div className={cn("p-4 rounded-2xl transition-transform group-hover:scale-110", stat.bg)}>
                 <stat.icon size={28} className={stat.color} />
               </div>
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-full">+12%</span>
+              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded-full">{stat.trend}</span>
             </div>
             <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2">{stat.label}</h3>
-            <p className="text-4xl font-black dark:text-white tracking-tighter">{stat.value}</p>
+            <p className="text-3xl font-black dark:text-white tracking-tighter">{stat.value}</p>
           </motion.div>
         ))}
       </div>

@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Clock, MessageSquare, Heart, MapPin, ChevronRight, Filter, ArrowLeft, Bookmark, Loader2 } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { ALL_TINKHUNDLA } from '../constants';
 
 export default function Category({ category: propCategory }: { category?: string }) {
-  const { category: paramCategory } = useParams<{ category: string }>();
+  const { category: paramCategory, constituencyName: paramConstituency } = useParams<{ category: string, constituencyName?: string }>();
+  const navigate = useNavigate();
   const rawCategory = propCategory || paramCategory || '';
   const categoryLower = rawCategory.toLowerCase();
   
+  // Format constituency name correctly (e.g., mbabane-east -> Mbabane East)
+  const decodedConstituency = paramConstituency ? paramConstituency.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+
   // Create Title Case version for querying db
   const formattedCategory = rawCategory.charAt(0).toUpperCase() + rawCategory.slice(1).toLowerCase();
 
@@ -20,6 +25,7 @@ export default function Category({ category: propCategory }: { category?: string
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fetchArticles = async (isLoadMore = false) => {
     if (isLoadMore) setLoadingMore(true);
@@ -27,27 +33,42 @@ export default function Category({ category: propCategory }: { category?: string
     
     try {
       const isSpecial = categoryLower === 'nationwide' || categoryLower === 'constituency';
-      const { articles: newArticles, lastVisible: nextLastVisible } = await newsService.getLatestArticles(
-        9, 
-        isSpecial ? undefined : formattedCategory,
-        isLoadMore ? lastVisible : undefined
-      );
+      let fetchedArticles: Article[] = [];
+      let nextLastVisible: QueryDocumentSnapshot<DocumentData> | null = null;
 
-      // Filter if it's nationwide or constituency (mock logic for now)
-      let filtered = newArticles;
+      if (decodedConstituency) {
+        // Fetch by constituency, filter by category client-side to avoid compound index issues
+        const data = await newsService.getArticlesByConstituency(decodedConstituency, 50);
+        // Only get ones matching category if not special
+        const filtered = isSpecial ? data : data.filter(a => a.category?.toLowerCase() === categoryLower);
+        fetchedArticles = filtered;
+        nextLastVisible = null; // Pagination disabled for client-side multi-filter
+        setHasMore(false);
+      } else {
+        const result = await newsService.getLatestArticles(
+          9, 
+          isSpecial ? undefined : formattedCategory,
+          isLoadMore ? lastVisible : undefined
+        );
+        fetchedArticles = result.articles;
+        nextLastVisible = result.lastVisible;
+        setHasMore(fetchedArticles.length === 9);
+      }
+
+      // Filter if it's nationwide or constituency
+      let filtered = fetchedArticles;
       if (categoryLower === 'nationwide') {
-        filtered = newArticles.filter(a => !a.region);
+        filtered = fetchedArticles.filter(a => !a.region);
       } else if (categoryLower === 'constituency') {
-        filtered = newArticles.filter(a => a.inkhundla);
+        filtered = fetchedArticles.filter(a => a.inkhundla);
       }
       
-      if (isLoadMore) {
+      if (isLoadMore && !decodedConstituency) {
         setArticles(prev => [...prev, ...filtered]);
       } else {
         setArticles(filtered);
       }
       setLastVisible(nextLastVisible);
-      setHasMore(newArticles.length === 9);
     } catch (error) {
       console.error('Error fetching articles:', error);
     } finally {
@@ -59,7 +80,7 @@ export default function Category({ category: propCategory }: { category?: string
   useEffect(() => {
     fetchArticles();
     window.scrollTo(0, 0);
-  }, [rawCategory]);
+  }, [rawCategory, decodedConstituency]);
 
   if (loading) {
     return (
@@ -88,18 +109,75 @@ export default function Category({ category: propCategory }: { category?: string
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter dark:text-white mb-4 leading-none">{rawCategory}</h1>
+              <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter dark:text-white mb-4 leading-none">{decodedConstituency ? `${rawCategory} in ${decodedConstituency}` : rawCategory}</h1>
               <p className="text-zinc-500 dark:text-zinc-400 max-w-2xl font-medium text-lg">
-                Stay updated with the latest {rawCategory} news and stories from across the Kingdom of Eswatini.
+                Stay updated with the latest {rawCategory} news and stories from {decodedConstituency ? decodedConstituency : 'across the Kingdom of Eswatini'}.
               </p>
             </motion.div>
-            <motion.button 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 px-6 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950 transition-all dark:text-zinc-400"
-            >
-              <Filter size={16} /> Filter Results
-            </motion.button>
+            
+            <div className="relative">
+              <motion.button 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isFilterOpen || decodedConstituency ? 'bg-rose-600 text-white shadow-xl shadow-rose-600/20' : 'bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-400 hover:bg-zinc-950 hover:text-white dark:hover:bg-white dark:hover:text-zinc-950'}`}
+              >
+                <Filter size={16} /> {decodedConstituency ? `Filtered: ${decodedConstituency}` : 'Filter by Constituency'}
+              </motion.button>
+
+              <AnimatePresence>
+                {isFilterOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-4 w-72 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-3xl p-4 z-50 max-h-96 overflow-y-auto no-scrollbar"
+                  >
+                    <div className="flex items-center justify-between mb-4 px-2">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Select Constituency</span>
+                       {decodedConstituency && (
+                         <button 
+                           onClick={() => {
+                             navigate(`/category/${categoryLower}`);
+                             setIsFilterOpen(false);
+                           }}
+                           className="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                         >
+                           Clear Filter
+                         </button>
+                       )}
+                    </div>
+                    <div className="grid grid-cols-1 gap-1">
+                      <button 
+                         onClick={() => {
+                           navigate(`/category/${categoryLower}`);
+                           setIsFilterOpen(false);
+                         }}
+                         className={`text-left px-4 py-3 rounded-2xl text-xs font-bold transition-colors ${!decodedConstituency ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30' : 'hover:bg-zinc-50 dark:hover:bg-zinc-900 dark:text-zinc-300'}`}
+                      >
+                         All Constituencies
+                      </button>
+                      {ALL_TINKHUNDLA.map(tinkhundla => {
+                        const encoded = tinkhundla.toLowerCase().replace(/\s+/g, '-');
+                        const isSelected = decodedConstituency.toLowerCase() === tinkhundla.toLowerCase();
+                        return (
+                          <button 
+                             key={tinkhundla}
+                             onClick={() => {
+                               navigate(`/category/${categoryLower}/constituency/${encoded}`);
+                               setIsFilterOpen(false);
+                             }}
+                             className={`text-left px-4 py-3 rounded-2xl text-xs font-bold transition-colors ${isSelected ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30' : 'hover:bg-zinc-50 dark:hover:bg-zinc-900 dark:text-zinc-300'}`}
+                          >
+                             {tinkhundla}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 

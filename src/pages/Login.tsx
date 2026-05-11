@@ -15,6 +15,8 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
+    setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -40,9 +42,21 @@ export default function Login() {
       
       toast.success('Signed in successfully');
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error signing in with Google:', error);
-      toast.error('Failed to sign in with Google');
+      if (error.code === 'auth/popup-blocked') {
+        toast.error('Popup blocked: Please allow popups or open this app in a new tab to sign in.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        toast.info('Sign-in cancelled. If the popup didn\'t open, try disabling your popup blocker.');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        toast.error('Sign-in popup closed before completion.');
+      } else if (error.code === 'auth/api-key-not-valid') {
+        toast.error('Authentication configuration error. This usually means the API key is restricted or invalid in the Firebase Console.');
+      } else {
+        toast.error(error.message || 'Failed to sign in with Google');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

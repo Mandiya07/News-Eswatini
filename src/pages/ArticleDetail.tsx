@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield } from 'lucide-react';
+import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield, Phone } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article, Comment } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
@@ -19,6 +19,22 @@ export default function ArticleDetail() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
+  const [tipAmount, setTipAmount] = useState('20');
+  const [tipPhone, setTipPhone] = useState('');
+  const [isProcessingTip, setIsProcessingTip] = useState(false);
+
+  const handleTipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tipPhone || !tipAmount) return;
+    setIsProcessingTip(true);
+    // Simulate Mobile Money request
+    setTimeout(() => {
+      setIsProcessingTip(false);
+      setIsTipModalOpen(false);
+      toast.success(`Thank you! Your SZL ${tipAmount} tip has been sent to ${article?.authorName}.`);
+    }, 2000);
+  };
 
   const shareUrl = window.location.href;
   const shareTitle = article?.title || 'Check out this story on Eswatini News';
@@ -262,6 +278,17 @@ export default function ArticleDetail() {
                   <span>5 Min Read</span>
                 </div>
               </div>
+              {/* Tip Jar Feature */}
+              {article.authorId !== auth.currentUser?.uid && (
+                <div className="ml-4 border-l pl-4 border-zinc-200 dark:border-zinc-800">
+                  <button 
+                    onClick={() => setIsTipModalOpen(true)}
+                    className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                  >
+                    <Heart size={14} /> Tip Author
+                  </button>
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -313,11 +340,31 @@ export default function ArticleDetail() {
             </motion.div>
 
             {/* Markdown Content */}
-            <article className="serif prose prose-lg md:prose-xl dark:prose-invert max-w-none mb-24 leading-relaxed text-zinc-800 dark:text-zinc-200 selection:bg-rose-100 dark:selection:bg-rose-900/30">
+            <article className="serif prose prose-lg md:prose-xl dark:prose-invert max-w-none mb-16 leading-relaxed text-zinc-800 dark:text-zinc-200 selection:bg-rose-100 dark:selection:bg-rose-900/30">
               <div className="markdown-body">
                 <ReactMarkdown>{article.content}</ReactMarkdown>
               </div>
             </article>
+
+            {/* Bottom Tip Author Banner */}
+            {article.authorId !== auth.currentUser?.uid && (
+              <div className="mb-16 bg-emerald-50 dark:bg-emerald-900/10 p-8 rounded-[2rem] border border-emerald-100 dark:border-emerald-900/30 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+                <div>
+                  <h3 className="text-xl font-black dark:text-white uppercase tracking-tighter mb-2 flex items-center justify-center sm:justify-start gap-2">
+                    <Heart size={20} className="text-emerald-500" fill="currentColor" /> Support {article.authorName}
+                  </h3>
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    If you enjoyed this article, consider tipping the author directly. 90% of your tip goes to the journalist.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setIsTipModalOpen(true)}
+                  className="bg-emerald-600 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-600/20 whitespace-nowrap"
+                >
+                  Tip Journalist
+                </button>
+              </div>
+            )}
 
             {/* Tags/Keywords */}
             <div className="flex flex-wrap gap-2 mb-20 border-t border-zinc-200 dark:border-zinc-800 pt-8">
@@ -519,6 +566,81 @@ export default function ArticleDetail() {
           </div>
         </div>
       </div>
+      
+      <AnimatePresence>
+        {isTipModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setIsTipModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 relative z-10 shadow-2xl border border-zinc-100 dark:border-zinc-800"
+            >
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Heart size={32} />
+                </div>
+                <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter mb-2">Tip Journalist</h2>
+                <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm">
+                  Support {article?.authorName}'s independent journalism. 90% goes directly to the author, 10% platform fee.
+                </p>
+              </div>
+
+              <form onSubmit={handleTipSubmit} className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1 block mb-2">Select Amount (SZL)</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['20', '50', '100', '200'].map(amount => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => setTipAmount(amount)}
+                        className={`py-3 rounded-2xl font-black text-sm transition-all ${tipAmount === amount ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20' : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800'}`}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Mobile Money Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                    <input 
+                      type="tel" 
+                      value={tipPhone}
+                      onChange={e => setTipPhone(e.target.value)}
+                      placeholder="e.g. 7600 0000"
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-12 pr-4 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-medium dark:text-white mb-2"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <button 
+                  type="submit"
+                  disabled={isProcessingTip}
+                  className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-emerald-600/20 disabled:opacity-50 disabled:hover:scale-100 flex justify-center items-center gap-2"
+                >
+                  {isProcessingTip ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Processing...</>
+                  ) : (
+                    `Tip SZL ${tipAmount}`
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -152,6 +152,24 @@
         "featuredUntil": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "category", "description", "contactPhone", "locations"]
+    },
+    "Bounty": {
+      "title": "Bounty",
+      "description": "A news request payout offered by editors",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "constituency": { "type": "string" },
+        "reward": { "type": "number" },
+        "status": { "type": "string", "enum": ["open", "completed", "expired"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "authorId": { "type": "string" },
+        "requirements": { "type": "array", "items": { "type": "string" } },
+        "submissionsCount": { "type": "integer" }
+      },
+      "required": ["title", "description", "reward", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -162,6 +180,7 @@
     "/submissions/{submissionId}": { "schema": "Submission", "description": "User-submitted stories" },
     "/payouts/{payoutId}": { "schema": "Payout", "description": "Payout records" },
     "/businesses/{businessId}": { "schema": "ServiceBusiness", "description": "Local service businesses" },
+    "/bounties/{bountyId}": { "schema": "Bounty", "description": "News task bounties" },
     "/_connection_test_/{testId}": { "schema": "object", "description": "Connection test collection" }
   }
 }

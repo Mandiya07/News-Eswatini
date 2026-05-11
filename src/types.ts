@@ -8,6 +8,7 @@ export interface User {
   photoURL?: string;
   createdAt: any;
   constituency?: string;
+  region?: string; // Add region for journalists
   bio?: string;
   videoBio?: string;
   socials?: {
@@ -29,6 +30,7 @@ export interface User {
     accountNumber: string;
     accountName: string;
   };
+  isVerifiedPolitician?: boolean;
 }
 
 export type ArticleStatus = 'draft' | 'published' | 'scheduled';
@@ -117,6 +119,7 @@ export interface Submission {
   videoURL?: string;
   status: 'pending' | 'reviewed' | 'rejected';
   createdAt: any;
+  bountyId?: string;
 }
 
 export interface Payout {
@@ -175,4 +178,20 @@ export interface ServiceBusiness {
   locations: BusinessLocation[];
   isFeatured: boolean;
   featuredUntil?: any;
+}
+
+export type BountyStatus = 'open' | 'completed' | 'expired';
+
+export interface Bounty {
+  id: string;
+  title: string;
+  description: string;
+  constituency: string;
+  reward: number;
+  status: BountyStatus;
+  createdAt: any;
+  authorId: string;
+  authorName: string;
+  requirements?: string[];
+  submissionsCount: number;
 }

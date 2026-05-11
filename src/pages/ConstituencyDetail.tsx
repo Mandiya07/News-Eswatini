@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, MessageSquare, Heart, MapPin, ChevronRight, ArrowLeft, Bookmark, Shield, Info, Building2, Phone, Mail } from 'lucide-react';
+import { Clock, MessageSquare, Heart, MapPin, ChevronRight, ArrowLeft, Bookmark, Shield, Info, Building2, Phone, Mail, User, Megaphone } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
@@ -113,7 +113,7 @@ export default function ConstituencyDetail() {
                       </Link>
                       <div className="absolute top-4 left-4 z-20">
                         <Link 
-                          to={`/category/${article.category?.toLowerCase() || ''}`}
+                          to={article.category ? `/category/${article.category.toLowerCase()}/constituency/${constituencyName}` : '#'}
                           className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full shadow-lg shadow-rose-600/20 hover:bg-rose-700 transition-colors block"
                         >
                           {article.category}
@@ -125,7 +125,7 @@ export default function ConstituencyDetail() {
                         <span className="flex items-center gap-1.5"><Clock size={12} className="text-rose-500" /> {formatDate(article.createdAt)}</span>
                         <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
                         <Link 
-                          to={`/category/${article.category?.toLowerCase() || ''}`}
+                          to={article.category ? `/category/${article.category.toLowerCase()}/constituency/${constituencyName}` : '#'}
                           className="text-rose-600 hover:text-rose-700 transition-colors"
                         >
                           {article.category}
@@ -215,6 +215,61 @@ export default function ConstituencyDetail() {
                    </li>
                  ))}
                </ul>
+            </div>
+
+            {/* Local Business Sponsorship Directory */}
+            <div className="bg-zinc-50 dark:bg-zinc-900/30 p-10 rounded-[3rem] border border-zinc-200 dark:border-zinc-800 mt-8">
+              <div className="flex items-center gap-3 mb-8">
+                <Heart size={20} className="text-emerald-500" />
+                <h3 className="text-sm font-black uppercase tracking-widest dark:text-white">Local Sponsors</h3>
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mb-6 leading-relaxed">
+                These local businesses sponsor {constituency} independent journalists. Support them for keeping the community informed.
+              </p>
+              <div className="space-y-4">
+                {[1, 2].map(i => (
+                  <div key={i} className="flex items-center gap-4 bg-white dark:bg-zinc-800 p-4 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-700">
+                    <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <Building2 size={24} className="text-zinc-300" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold dark:text-white">Local Enterprise {i}</h4>
+                      <p className="text-[10px] uppercase font-bold tracking-widest text-emerald-600 mt-1">Official Sponsor</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button 
+                onClick={() => window.location.href = '/register-business'}
+                className="w-full mt-6 py-3 border-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
+               >
+                Become a Sponsor
+              </button>
+            </div>
+
+            {/* Local Classifieds Billboard */}
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 p-10 rounded-[3rem] border border-amber-100 dark:border-amber-900/30 mt-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6 opacity-20"><Megaphone size={64} className="text-amber-500" /></div>
+              <div className="relative z-10">
+                <h3 className="text-sm font-black uppercase tracking-widest text-amber-900 dark:text-amber-500 mb-4">Local Classifieds</h3>
+                <p className="text-xs text-amber-800/80 dark:text-amber-400/80 font-medium mb-8 leading-relaxed pr-8">
+                  Lost something? Selling old items? Announcing an obituary or a local job? Post a classified ad in {constituency} starting at SZL 5.00 via Mobile Money.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <Link 
+                    to="/classifieds"
+                    className="w-full py-4 text-center bg-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-amber-700 transition-colors shadow-lg active:scale-95"
+                  >
+                    View Classifieds
+                  </Link>
+                  <Link 
+                    to="/submit/classified"
+                    className="w-full py-4 text-center border-2 border-amber-600 text-amber-700 dark:text-amber-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors active:scale-95"
+                  >
+                    Post an Ad
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

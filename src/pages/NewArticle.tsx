@@ -11,13 +11,14 @@ import MediaUpload from '../components/MediaUpload';
 export default function NewArticle() {
   const navigate = useNavigate();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const submitActionRef = useRef<string>('publish');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     category: 'News',
     region: '',
-    status: 'draft',
+    status: 'published',
     imageURL: '',
     videoURL: '',
     contentLabel: 'Independent'
@@ -57,8 +58,11 @@ export default function NewArticle() {
 
     setLoading(true);
     try {
+      const finalStatus = submitActionRef.current === 'draft' ? 'draft' : formData.status;
+      
       const articleData = {
         ...formData,
+        status: finalStatus,
         authorId: auth.currentUser?.uid,
         authorName: auth.currentUser?.displayName || 'Unknown Author',
         authorPhoto: auth.currentUser?.photoURL || null,
@@ -72,7 +76,7 @@ export default function NewArticle() {
       };
 
       await addDoc(collection(db, 'articles'), articleData);
-      toast.success('Article created successfully!');
+      toast.success(finalStatus === 'draft' ? 'Draft saved successfully!' : 'Article published successfully!');
       navigate('/admin/articles');
     } catch (error) {
       console.error('Error creating article:', error);
@@ -232,21 +236,19 @@ export default function NewArticle() {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Status</label>
-            <select 
-              value={formData.status}
-              onChange={e => setFormData({ ...formData, status: e.target.value })}
-              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-rose-600 transition-all dark:text-white font-medium"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-            </select>
-          </div>
-
-          <div className="pt-6 flex justify-end">
+          <div className="pt-6 flex justify-end gap-4">
             <button 
               type="submit" 
+              onClick={() => submitActionRef.current = 'draft'}
+              disabled={loading}
+              className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all active:scale-95 disabled:opacity-50"
+            >
+              <Save size={18} />
+              Save Draft
+            </button>
+            <button 
+              type="submit" 
+              onClick={() => submitActionRef.current = 'publish'}
               disabled={loading}
               className="bg-rose-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-rose-700 transition-all shadow-lg shadow-rose-600/20 active:scale-95 disabled:opacity-50"
             >

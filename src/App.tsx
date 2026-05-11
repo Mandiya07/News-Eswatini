@@ -21,6 +21,10 @@ import RegisterBusiness from './pages/RegisterBusiness';
 import MinistryPortal from './pages/MinistryPortal';
 import EditorPortal from './pages/EditorPortal';
 import GovernmentGazette from './pages/GovernmentGazette';
+import Classifieds from './pages/Classifieds';
+import SubmitClassified from './pages/SubmitClassified';
+import PoliticianPortal from './pages/PoliticianPortal';
+import BountyBoard from './pages/BountyBoard';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -33,7 +37,9 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/article/:id" element={<ArticleDetail />} />
             <Route path="/category/:category" element={<Category />} />
+            <Route path="/category/:category/constituency/:constituencyName" element={<Category />} />
             <Route path="/region/:region" element={<Region />} />
+            <Route path="/region/:region/category/:category" element={<Region />} />
             <Route path="/login" element={<Login />} />
             <Route path="/directory" element={<Directory />} />
             <Route path="/directory/:id" element={<BusinessDetail />} />
@@ -92,6 +98,10 @@ function App() {
             <Route path="/constituency/:constituencyName" element={<ConstituencyDetail />} />
             <Route path="/author/:id" element={<AuthorProfile />} />
             <Route path="/gazette" element={<GovernmentGazette />} />
+            <Route path="/classifieds" element={<Classifieds />} />
+            <Route path="/bounties" element={<BountyBoard />} />
+            <Route path="/submit/classified" element={<SubmitClassified />} />
+            <Route path="/mp-portal" element={<ProtectedRoute><PoliticianPortal /></ProtectedRoute>} />
           </Routes>
         </main>
         <Footer />

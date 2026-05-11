@@ -5,8 +5,9 @@ import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
+console.log("Firebase initialized with project:", firebaseConfig.projectId);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const storage = getStorage(app);
 
 // Error Handling Spec for Firestore Operations
@@ -85,5 +86,3 @@ Ensure that "Cloud Firestore" is enabled and a "(default)" database is created.`
     }
   }
 }
-
-testConnection();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, User, LogOut, Bell, Moon, Sun, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Bell, Moon, Sun, ChevronDown, LayoutDashboard, Shield } from 'lucide-react';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { cn } from '../lib/utils';
@@ -153,6 +153,36 @@ export default function Navbar() {
                 {location.pathname !== '/nationwide' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
               </Link>
 
+              <Link 
+                to="/classifieds" 
+                className={cn(
+                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  location.pathname.startsWith('/classifieds') 
+                    ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
+                    : scrolled
+                      ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                )}
+              >
+                Classifieds
+                {!location.pathname.startsWith('/classifieds') && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
+              </Link>
+              
+              <Link 
+                to="/bounties" 
+                className={cn(
+                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  location.pathname === '/bounties' 
+                    ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" 
+                    : scrolled
+                      ? "text-zinc-500 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                      : "text-zinc-700 dark:text-zinc-200 hover:text-amber-600 dark:hover:text-amber-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                )}
+              >
+                Bounties
+                {location.pathname !== '/bounties' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-amber-500 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
+              </Link>
+              
               <Link 
                 to="/directory" 
                 className={cn(
@@ -329,6 +359,9 @@ export default function Navbar() {
                         <LayoutDashboard size={14} className="text-zinc-400 group-hover/link:text-rose-600 transition-colors" /> Admin Dashboard
                       </Link>
                     )}
+                    <Link to="/mp-portal" className="flex items-center gap-3 px-4 py-3 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-2xl transition-colors dark:text-zinc-300 group/link">
+                      <Shield size={14} className="text-zinc-400 group-hover/link:text-rose-600 transition-colors" /> Politician Portal
+                    </Link>
                     <Link to="/add-event" className="flex items-center gap-3 px-4 py-3 text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-2xl transition-colors dark:text-zinc-300 group/link">
                       <Bell size={14} className="text-zinc-400 group-hover/link:text-rose-600 transition-colors" /> Submit Event
                     </Link>
@@ -376,7 +409,7 @@ export default function Navbar() {
             <div className="p-6 space-y-8">
               <div className="grid grid-cols-2 gap-4">
                 <Link to="/nationwide" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-900 rounded-2xl dark:text-zinc-300 shadow-sm border border-zinc-100 dark:border-zinc-800">Nationwide</Link>
-                <Link to="/gazette" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-900 rounded-2xl dark:text-zinc-300 shadow-sm border border-zinc-100 dark:border-zinc-800">Gazette</Link>
+                <Link to="/bounties" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-2xl shadow-sm border border-amber-100 dark:border-amber-800">Bounties</Link>
                 <Link to="/directory" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-2xl shadow-sm border border-rose-100 dark:border-rose-800 col-span-2">Local Services Directory</Link>
               </div>
               

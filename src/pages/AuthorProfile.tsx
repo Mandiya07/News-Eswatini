@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { User as UserIcon, Calendar, BookOpen, Star, Twitter, Facebook, Instagram, Share2, ArrowLeft, ChevronRight, Globe, Film } from 'lucide-react';
+import { User as UserIcon, Calendar, BookOpen, Star, Twitter, Facebook, Instagram, Share2, ArrowLeft, ChevronRight, Globe, Film, Heart } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article, User } from '../types';
 import { formatDate } from '../lib/utils';
@@ -68,7 +68,7 @@ export default function AuthorProfile() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-48 h-48 bg-white dark:bg-zinc-950 rounded-[2.5rem] p-3 shadow-2xl overflow-hidden mb-8"
+            className="w-48 h-48 bg-white dark:bg-zinc-950 rounded-[2.5rem] p-3 shadow-2xl overflow-hidden mb-8 relative"
           >
             <div className="w-full h-full rounded-[2rem] bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center border-4 border-zinc-50 dark:border-zinc-900 overflow-hidden">
               {author.photoURL ? (
@@ -85,9 +85,17 @@ export default function AuthorProfile() {
             transition={{ delay: 0.1 }}
             className="max-w-3xl"
           >
-            <h1 className="text-5xl font-black dark:text-white uppercase tracking-tighter mb-4">{author.name}</h1>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <h1 className="text-5xl font-black dark:text-white uppercase tracking-tighter">{author.name}</h1>
+              {author.reputationPoints && author.reputationPoints > 500 && (
+                <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm mt-3">
+                  <Star size={12} fill="currentColor" /> Top Contributor
+                </span>
+              )}
+            </div>
+
             <div className="flex flex-wrap justify-center items-center gap-6 text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-8">
-              <span className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 px-5 py-2.5 rounded-full text-rose-600">{author.role}</span>
+              <span className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/10 px-5 py-2.5 rounded-full text-rose-600 border border-rose-100 dark:border-rose-900/30">{author.role === 'reporter' ? 'Journalist' : 'Community Reporter'}</span>
               <span className="flex items-center gap-2"><Calendar size={14} /> Joined {formatDate(author.createdAt)}</span>
               <span className="flex items-center gap-2"><BookOpen size={14} /> {articles.length} Stories</span>
               {author.reputationPoints && (
@@ -96,8 +104,18 @@ export default function AuthorProfile() {
             </div>
             
             <p className="text-xl text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mb-10">
-              {author.bio || `Senior contributor covering development, politics, and culture in ${author.constituency || 'Eswatini'}. Dedicated to providing local insights with global perspective.`}
+              {author.bio || `Serving the people of ${author.constituency || 'Eswatini'}. Dedicated to providing local insights and community updates.`}
             </p>
+
+            <div className="flex justify-center flex-wrap gap-4 mb-10">
+              <button 
+                onClick={() => alert("Tipping integration coming soon. Thank you for supporting local independent journalism!")}
+                className="flex items-center gap-3 bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-all shadow-lg active:scale-95"
+              >
+                <Heart size={16} fill="currentColor" className="text-emerald-300" /> 
+                Support Journalist
+              </button>
+            </div>
 
             {author.videoBio && (
               <motion.div 

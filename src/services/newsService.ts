@@ -17,7 +17,8 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   DocumentData,
-  QueryConstraint
+  QueryConstraint,
+  collectionGroup
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Article, Comment, Poll, Submission, Reply, ServiceBusiness, Ad } from '../types';
@@ -417,6 +418,31 @@ export const newsService = {
     } catch (error) {
       console.warn("Could not fetch ads:", error);
       return [];
+    }
+  },
+
+  async getGlobalPendingSubmissionCount(): Promise<number> {
+    try {
+      const q = query(
+        collection(db, SUBMISSIONS_COLLECTION),
+        where('status', '==', 'pending')
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.size;
+    } catch (error) {
+      console.warn("Could not fetch global pending submission count:", error);
+      return 0;
+    }
+  },
+
+  async getTotalCommentsCount(): Promise<number> {
+    try {
+      const q = collectionGroup(db, 'comments');
+      const snapshot = await getDocs(q);
+      return snapshot.size;
+    } catch (error) {
+      console.warn("Could not fetch total comments count:", error);
+      return 0;
     }
   },
 

@@ -1,15 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Send, Upload, Info, CheckCircle, Bold, Italic, List, ListOrdered, Link as LinkIcon, User, Clock } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Send, Upload, Info, CheckCircle, Bold, Italic, List, ListOrdered, Link as LinkIcon, User, Clock, Trophy } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { toast } from 'sonner';
 import { TINKHUNDLA_DATA } from '../constants';
 import { useAuth } from '../hooks/useAuth';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Bounty } from '../types';
 
 import MediaUpload from '../components/MediaUpload';
 
 export default function SubmitStory() {
   const { userData, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const bountyId = searchParams.get('bountyId');
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -20,15 +25,31 @@ export default function SubmitStory() {
   const [submitted, setSubmitted] = useState(false);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [checkingLimit, setCheckingLimit] = useState(true);
+  const [bounty, setBounty] = useState<Bounty | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const MAX_PENDING_SUBMISSIONS = 3;
 
   useEffect(() => {
-    if (userData?.constituency) {
+    if (bountyId) {
+      const fetchBounty = async () => {
+        const bountyDoc = await getDoc(doc(db, 'bounties', bountyId));
+        if (bountyDoc.exists()) {
+          const data = bountyDoc.data() as Bounty;
+          setBounty({ id: bountyDoc.id, ...data });
+          setTitle(`Report: ${data.title}`);
+          setConstituency(data.constituency);
+        }
+      };
+      fetchBounty();
+    }
+  }, [bountyId]);
+
+  useEffect(() => {
+    if (userData?.constituency && !bountyId) {
       setConstituency(userData.constituency);
     }
-  }, [userData]);
+  }, [userData, bountyId]);
 
   useEffect(() => {
     if (user) {
@@ -84,7 +105,8 @@ export default function SubmitStory() {
         submitterEmail: user.email || '',
         constituency,
         imageURL: media?.type === 'image' ? media.url : undefined,
-        videoURL: videoUrl || (media?.type === 'video' ? media.url : undefined)
+        videoURL: videoUrl || (media?.type === 'video' ? media.url : undefined),
+        bountyId: bountyId || undefined
       });
       setSubmitted(true);
       toast.success('Story submitted successfully!');
@@ -97,16 +119,47 @@ export default function SubmitStory() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-12 text-center space-y-6">
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle size={40} />
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4 py-20">
+        <div className="max-w-xl w-full bg-white dark:bg-zinc-900 rounded-[3rem] shadow-2xl p-12 text-center space-y-8">
+          <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle size={48} />
           </div>
-          <h1 className="text-3xl font-black dark:text-white">Thank You!</h1>
-          <p className="text-zinc-500 dark:text-zinc-400">
-            Your story has been submitted for review. Our editorial team will look into it and contact you if we need more information.
-          </p>
-          <Link to="/" className="inline-block bg-rose-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-rose-700 transition-colors">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-black dark:text-white uppercase tracking-tighter">Thank You!</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 font-medium">
+              Your story has been submitted for review.
+            </p>
+          </div>
+
+          <div className="text-left bg-zinc-50 dark:bg-zinc-800 p-8 rounded-3xl border border-zinc-100 dark:border-zinc-700">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-white flex items-center gap-2">
+                <Info size={16} className="text-rose-600" />
+                Submission Guidelines & Rewards
+              </h3>
+              <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest">+50 Rep per approval</span>
+            </div>
+            <ul className="space-y-4 text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+              <li className="flex gap-3">
+                <span className="text-rose-600">•</span>
+                <span><strong>Factual Accuracy:</strong> Ensure the story is verified and based on factual events.</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-rose-600">•</span>
+                <span><strong>Relevance:</strong> Ensure the content is directly relevant to issues, communities, or events in Eswatini.</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-amber-500">•</span>
+                <span><strong>Citizen Journalist Rewards:</strong> Every approved story earns you Reputation Points (Rep). Users with Top Contributor badges gain priority review and eligibility for editorial bounties.</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-rose-600">•</span>
+                <span><strong>Verifiable Evidence:</strong> Include clear photos, video, or contact details where possible for verification.</span>
+              </li>
+            </ul>
+          </div>
+
+          <Link to="/" className="inline-block bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl">
             Back to Home
           </Link>
         </div>
@@ -153,6 +206,33 @@ export default function SubmitStory() {
             Become a citizen journalist. Share news, events, or stories from your community with the rest of Eswatini.
           </p>
         </header>
+
+        {bounty && (
+          <div className="mb-12 bg-amber-50 dark:bg-amber-900/20 p-8 rounded-[2.5rem] border-2 border-amber-500/30 flex flex-col md:flex-row items-center gap-6 shadow-xl shadow-amber-500/5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Trophy size={80} className="text-amber-500" />
+            </div>
+            <div className="w-16 h-16 bg-amber-500 text-white rounded-2xl flex items-center justify-center flex-shrink-0 animate-bounce transition-all">
+              <Trophy size={32} />
+            </div>
+            <div className="relative z-10 flex-1 text-center md:text-left">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-2">
+                <span className="bg-amber-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Active Bounty</span>
+                <span className="text-amber-700 dark:text-amber-400 font-bold text-sm">Reward: SZL {bounty.reward}</span>
+              </div>
+              <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter mb-2">{bounty.title}</h2>
+              <p className="text-amber-800/70 dark:text-amber-400/70 font-medium text-xs leading-relaxed line-clamp-2">
+                Linking this submission to the official bounty. High-quality reports get paid instantly upon approval.
+              </p>
+            </div>
+            <Link 
+              to="/bounties"
+              className="px-6 py-3 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-amber-200 dark:border-amber-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-50 transition-colors"
+            >
+              Cancel Link
+            </Link>
+          </div>
+        )}
 
         <div className="bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-8 md:p-12 border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -255,14 +335,32 @@ export default function SubmitStory() {
               />
             </div>
 
-            <div className="bg-rose-50 dark:bg-rose-900/10 p-6 rounded-2xl flex gap-4 border border-rose-100 dark:border-rose-800">
-              <Info className="text-rose-600 flex-shrink-0" size={24} />
-              <div className="space-y-1">
-                <p className="text-sm font-black uppercase tracking-tight text-rose-900 dark:text-rose-200">Editorial Guidelines & Payments</p>
-                <p className="text-[11px] text-rose-800/70 dark:text-rose-300/70 leading-relaxed font-medium">
-                  All submissions are reviewed by our editors. We prioritize stories that are factual, relevant to Eswatini, and include verifiable details. Premium investigations and features authored by verified freelancers may be eligible for standard SZL payout tiers upon approval.
-                </p>
+            <div className="text-left bg-zinc-50 dark:bg-zinc-800 p-8 rounded-3xl border border-zinc-100 dark:border-zinc-700">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 dark:text-white flex items-center gap-2">
+                  <Info size={16} className="text-rose-600" />
+                  Submission Guidelines & Rewards
+                </h3>
+                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest">+50 Rep per approval</span>
               </div>
+              <ul className="space-y-4 text-sm text-zinc-600 dark:text-zinc-400 font-medium">
+                <li className="flex gap-3">
+                  <span className="text-rose-600">•</span>
+                  <span><strong>Factual Accuracy:</strong> Ensure the story is verified and based on factual events.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-rose-600">•</span>
+                  <span><strong>Relevance:</strong> Ensure the content is directly relevant to issues, communities, or events in Eswatini.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-amber-500">•</span>
+                  <span><strong>Citizen Journalist Rewards:</strong> Every approved story earns you Reputation Points (Rep). Users with Top Contributor badges gain priority review and eligibility for editorial bounties.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="text-rose-600">•</span>
+                  <span><strong>Verifiable Evidence:</strong> Include clear photos, video, or contact details where possible for verification.</span>
+                </li>
+              </ul>
             </div>
 
             <div className="space-y-6">
