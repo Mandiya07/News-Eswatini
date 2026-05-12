@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin, Twitter, Facebook, Instagram, Globe } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin, Twitter, Facebook, Instagram, Globe, Eye, Coins, FileText, ChevronUp } from 'lucide-react';
 import { formatDate, cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
 import { ALL_TINKHUNDLA } from '../constants';
+import { Article } from '../types';
 
 import MediaUpload from '../components/MediaUpload';
 
 export default function Profile() {
   const { user, userData, loading, isContributor } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(false);
   const [name, setName] = useState('');
   const [constituency, setConstituency] = useState('');
   const [videoBio, setVideoBio] = useState('');
@@ -45,6 +48,29 @@ export default function Profile() {
       }
     }
   }, [user, userData]);
+
+  useEffect(() => {
+    if (user && isContributor) {
+      const fetchMyArticles = async () => {
+        setLoadingArticles(true);
+        try {
+          const q = query(
+            collection(db, 'articles'),
+            where('authorId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(10)
+          );
+          const snapshot = await getDocs(q);
+          setArticles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Article)));
+        } catch (error) {
+          console.error('Error fetching articles:', error);
+        } finally {
+          setLoadingArticles(false);
+        }
+      };
+      fetchMyArticles();
+    }
+  }, [user, isContributor]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -432,6 +458,76 @@ export default function Profile() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-20"
                 >
+                  {/* Journalist Performance Dashboard */}
+                  {isContributor && (
+                    <section className="space-y-12">
+                      <div className="flex items-center justify-between border-b-4 border-zinc-950 dark:border-white pb-8">
+                        <h3 className="serif text-4xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-5">
+                          <TrendingUp size={32} className="text-emerald-600" /> Performance & Analytics
+                        </h3>
+                      </div>
+                      
+                      {/* Top Performance Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 p-8 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-800">
+                           <div className="flex justify-between items-start mb-4">
+                              <div className="p-3 bg-emerald-500 text-white rounded-2xl"><Coins size={24} /></div>
+                              <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full">+12% vs last month</span>
+                           </div>
+                           <p className="text-[10px] font-black uppercase tracking-widest text-emerald-800/60 dark:text-emerald-500/60 mb-2">Estimated Balance</p>
+                           <h4 className="text-4xl font-black dark:text-white leading-none">SZL {(userData?.earnings || 0).toFixed(2)}</h4>
+                        </div>
+                        
+                        <div className="bg-blue-50 dark:bg-blue-950/20 p-8 rounded-[2.5rem] border border-blue-100 dark:border-blue-800">
+                           <div className="flex justify-between items-start mb-4">
+                              <div className="p-3 bg-blue-500 text-white rounded-2xl"><Eye size={24} /></div>
+                           </div>
+                           <p className="text-[10px] font-black uppercase tracking-widest text-blue-800/60 dark:text-blue-500/60 mb-2">Article Traffic</p>
+                           <h4 className="text-4xl font-black dark:text-white leading-none">{(userData?.totalViews || 0).toLocaleString()} <span className="text-sm font-medium text-blue-400 font-sans tracking-normal ml-1">views</span></h4>
+                        </div>
+
+                        <div className="bg-rose-50 dark:bg-rose-950/20 p-8 rounded-[2.5rem] border border-rose-100 dark:border-rose-800">
+                           <div className="flex justify-between items-start mb-4">
+                              <div className="p-3 bg-rose-500 text-white rounded-2xl"><FileText size={24} /></div>
+                           </div>
+                           <p className="text-[10px] font-black uppercase tracking-widest text-rose-800/60 dark:text-rose-500/60 mb-2">Approved Stories</p>
+                           <h4 className="text-4xl font-black dark:text-white leading-none">{userData?.articleCount || 0}</h4>
+                        </div>
+                      </div>
+
+                      {/* Recent Published Articles Table-like List */}
+                      <div className="bg-white dark:bg-zinc-900/50 rounded-[3rem] border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+                        <div className="px-8 py-6 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-700 flex justify-between items-center">
+                           <h4 className="text-xs font-black uppercase tracking-widest dark:text-white">Your Published Items</h4>
+                           <button className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2">View Analytics <ChevronUp size={14} className="rotate-90" /></button>
+                        </div>
+                        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                          {articles.map((article) => (
+                            <div key={article.id} className="p-8 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                               <div className="flex-1 pr-8">
+                                  <h5 className="font-black dark:text-white uppercase tracking-tighter text-lg leading-tight mb-2">{article.title}</h5>
+                                  <div className="flex items-center gap-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                                     <span className="flex items-center gap-1"><Calendar size={12} /> {formatDate(article.createdAt?.toDate() || new Date())}</span>
+                                     <span className="flex items-center gap-1 text-emerald-500"><Coins size={12} /> Earned SZL {(article.views ? (article.views * 0.15) : 0).toFixed(2)}</span>
+                                  </div>
+                               </div>
+                               <div className="text-right">
+                                  <div className="flex items-center gap-1.5 text-zinc-900 dark:text-white font-black text-xl leading-none mb-1">
+                                    {article.views || 0} <Eye size={16} className="text-rose-500" />
+                                  </div>
+                                  <p className="text-[8px] font-black uppercase text-zinc-400 tracking-widest">Total Impressions</p>
+                               </div>
+                            </div>
+                          ))}
+                          {loadingArticles && <div className="p-12 text-center text-zinc-400 animate-pulse uppercase font-black text-xs">Loading analytics...</div>}
+                          {!loadingArticles && articles.length === 0 && (
+                            <div className="p-12 text-center text-zinc-500 font-medium italic">No articles published yet. Approve stories in Editor Portal to begin earning.</div>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
                   {/* Bookmarks */}
                   <section className="space-y-12">
                     <div className="flex items-center justify-between border-b-4 border-zinc-950 dark:border-white pb-8">

@@ -21,7 +21,7 @@ import {
   collectionGroup
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Article, Comment, Poll, Submission, Reply, ServiceBusiness, Ad } from '../types';
+import { Article, Comment, Poll, Submission, ServiceBusiness, Ad } from '../types';
 import { DEMO_ARTICLES, DEMO_POLLS } from '../constants/demoData';
 
 const ARTICLES_COLLECTION = 'articles';
@@ -224,7 +224,7 @@ export const newsService = {
     }
   },
 
-  async addComment(articleId: string, comment: Omit<Comment, 'id' | 'createdAt' | 'likes' | 'likedBy' | 'replies'>) {
+  async addComment(articleId: string, comment: Omit<Comment, 'id' | 'createdAt' | 'likes' | 'likedBy'>) {
     const path = `${ARTICLES_COLLECTION}/${articleId}/comments`;
     try {
       const colRef = collection(db, ARTICLES_COLLECTION, articleId, 'comments');
@@ -232,7 +232,6 @@ export const newsService = {
         ...comment,
         likes: 0,
         likedBy: [],
-        replies: [],
         createdAt: serverTimestamp()
       });
       // Update comment count on article
@@ -259,23 +258,12 @@ export const newsService = {
     }
   },
 
-  async addReply(articleId: string, commentId: string, reply: Omit<Reply, 'id' | 'createdAt'>) {
-    const path = `${ARTICLES_COLLECTION}/${articleId}/comments/${commentId}`;
-    try {
-      const docRef = doc(db, ARTICLES_COLLECTION, articleId, 'comments', commentId);
-      const replyWithId = {
-        ...reply,
-        id: Math.random().toString(36).substring(2, 9),
-        createdAt: new Date().toISOString() // Using ISO string for array items as serverTimestamp() doesn't work in arrays
-      };
-      await updateDoc(docRef, {
-        replies: arrayUnion(replyWithId)
-      });
-      return replyWithId.id;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, path);
-      return '';
-    }
+  async addReply(articleId: string, parentId: string, reply: Omit<Comment, 'id' | 'createdAt' | 'likes' | 'likedBy' | 'articleId' | 'parentId'>) {
+    return await this.addComment(articleId, {
+      ...reply,
+      articleId,
+      parentId
+    });
   },
 
   async getActivePolls() {

@@ -150,7 +150,7 @@ export default function ArticleDetail() {
     }
   };
 
-  const handleReplySubmit = async (commentId: string) => {
+  const handleReplySubmit = async (parentId: string) => {
     if (!auth.currentUser) {
       toast.error('Please sign in to reply');
       return;
@@ -165,7 +165,7 @@ export default function ArticleDetail() {
         userPhoto: auth.currentUser.photoURL || undefined,
         content: replyContent
       };
-      await newsService.addReply(id!, commentId, replyData);
+      await newsService.addReply(id!, parentId, replyData);
       setReplyContent('');
       setReplyingTo(null);
       // Refresh comments
@@ -178,6 +178,124 @@ export default function ArticleDetail() {
       setSubmitting(false);
     }
   };
+
+  // Build comment tree
+  const buildCommentTree = (flatComments: Comment[]) => {
+    const commentMap: { [key: string]: Comment & { children: Comment[] } } = {};
+    const rootComments: (Comment & { children: Comment[] })[] = [];
+
+    // First pass: create map
+    flatComments.forEach(comment => {
+      commentMap[comment.id] = { ...comment, children: [] };
+    });
+
+    // Second pass: build tree
+    flatComments.forEach(comment => {
+      if (comment.parentId && commentMap[comment.parentId]) {
+        commentMap[comment.parentId].children.push(commentMap[comment.id]);
+      } else {
+        rootComments.push(commentMap[comment.id]);
+      }
+    });
+
+    return rootComments;
+  };
+
+  const commentTree = buildCommentTree(comments);
+
+  const CommentItem = ({ comment, depth = 0 }: { comment: Comment & { children: Comment[] }, depth?: number }) => (
+    <div className={cn("space-y-4", depth > 0 ? "mt-6 pl-6 border-l w-full border-zinc-200 dark:border-zinc-800" : "")}>
+      <div className="flex gap-4 group">
+        <div className={cn("bg-zinc-100 dark:bg-zinc-900 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800", depth > 0 ? "w-8 h-8" : "w-10 h-10")}>
+          {comment.userPhoto ? (
+            <img src={comment.userPhoto} alt={comment.userName} className="w-full h-full object-cover" />
+          ) : (
+            <User size={depth > 0 ? 16 : 20} className="text-zinc-400" />
+          )}
+        </div>
+        <div className="flex-1 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className={cn("font-bold dark:text-white uppercase tracking-tight", depth > 0 ? "text-xs" : "text-sm")}>{comment.userName}</span>
+            <span className={cn("text-zinc-500 font-bold uppercase tracking-widest", depth > 0 ? "text-[8px]" : "text-[10px]")}>{formatDate(comment.createdAt)}</span>
+          </div>
+          <p className={cn("text-zinc-800 dark:text-zinc-300 leading-relaxed font-medium", depth > 0 ? "text-sm" : "text-base")}>
+            {comment.content}
+          </p>
+          <div className="flex items-center gap-6 pt-2">
+            <button 
+              onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+              className="text-[10px] font-bold text-zinc-500 hover:text-black dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
+            >
+              <MessageSquare size={14} /> Reply
+            </button>
+            <button 
+              onClick={() => handleLikeComment(comment.id, comment.likedBy)}
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5",
+                comment.likedBy?.includes(auth.currentUser?.uid || '') 
+                  ? "text-rose-600" 
+                  : "text-zinc-500 hover:text-rose-600"
+              )}
+            >
+              <Heart size={14} fill={comment.likedBy?.includes(auth.currentUser?.uid || '') ? "currentColor" : "none"} /> 
+              {comment.likes || 0} Likes
+            </button>
+          </div>
+
+          {/* Reply Form */}
+          <AnimatePresence>
+            {replyingTo === comment.id && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-6 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50"
+              >
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-4">
+                    <textarea 
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      placeholder={`Reply to ${comment.userName}...`}
+                      className="w-full bg-transparent border-none p-0 focus:ring-0 outline-none dark:text-white min-h-[60px] text-sm"
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                      <button 
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setReplyContent('');
+                        }}
+                        className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => handleReplySubmit(comment.id)}
+                        disabled={submitting || !replyContent.trim()}
+                        className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-50"
+                      >
+                        {submitting ? '...' : 'Reply'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Render Children (Recursive) */}
+          {comment.children.length > 0 && (
+            <div className="space-y-4">
+              {comment.children.map(child => (
+                <CommentItem key={child.id} comment={child as any} depth={depth + 1} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -340,7 +458,7 @@ export default function ArticleDetail() {
             </motion.div>
 
             {/* Markdown Content */}
-            <article className="serif prose prose-lg md:prose-xl dark:prose-invert max-w-none mb-16 leading-relaxed text-zinc-800 dark:text-zinc-200 selection:bg-rose-100 dark:selection:bg-rose-900/30">
+            <article className="font-sans prose prose-lg md:prose-xl dark:prose-invert max-w-none mb-16 leading-relaxed text-zinc-800 dark:text-zinc-200 selection:bg-rose-100 dark:selection:bg-rose-900/30">
               <div className="markdown-body">
                 <ReactMarkdown>{article.content}</ReactMarkdown>
               </div>
@@ -410,119 +528,17 @@ export default function ArticleDetail() {
                     </button>
                   </div>
                 </form>
-              </div>
-
-              {/* Comment List */}
+              </div>              {/* Comment List */}
               <div className="space-y-10 border-t border-zinc-200 dark:border-zinc-800 pt-8">
                 <AnimatePresence mode="popLayout">
-                  {comments.map((comment, idx) => (
+                  {commentTree.map((comment, idx) => (
                     <motion.div 
                       key={comment.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="flex gap-4 group"
                     >
-                      <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-900 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                        {comment.userPhoto ? (
-                          <img src={comment.userPhoto} alt={comment.userName} className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={20} className="text-zinc-400" />
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-2.5">
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="text-sm font-bold dark:text-white uppercase tracking-tight">{comment.userName}</span>
-                          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{formatDate(comment.createdAt)}</span>
-                        </div>
-                        <p className="text-base text-zinc-800 dark:text-zinc-300 leading-relaxed font-medium">
-                          {comment.content}
-                        </p>
-                        <div className="flex items-center gap-6 pt-2">
-                          <button 
-                            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                            className="text-[10px] font-bold text-zinc-500 hover:text-black dark:hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
-                          >
-                            <MessageSquare size={14} /> Reply
-                          </button>
-                          <button 
-                            onClick={() => handleLikeComment(comment.id, comment.likedBy)}
-                            className={cn(
-                              "text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5",
-                              comment.likedBy?.includes(auth.currentUser?.uid || '') 
-                                ? "text-rose-600" 
-                                : "text-zinc-500 hover:text-rose-600"
-                            )}
-                          >
-                            <Heart size={14} fill={comment.likedBy?.includes(auth.currentUser?.uid || '') ? "currentColor" : "none"} /> 
-                            {comment.likes || 0} Likes
-                          </button>
-                        </div>
-
-                        {/* Reply Form */}
-                        <AnimatePresence>
-                          {replyingTo === comment.id && (
-                            <motion.div 
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="mt-6 border border-zinc-200 dark:border-zinc-800 p-4"
-                            >
-                              <div className="flex gap-4">
-                                <div className="flex-1 space-y-4">
-                                  <textarea 
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    placeholder="Write a reply..."
-                                    className="w-full bg-transparent border-none p-0 focus:ring-0 outline-none dark:text-white min-h-[60px] text-sm"
-                                  />
-                                  <div className="flex justify-end gap-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-                                    <button 
-                                      onClick={() => setReplyingTo(null)}
-                                      className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button 
-                                      onClick={() => handleReplySubmit(comment.id)}
-                                      disabled={submitting || !replyContent.trim()}
-                                      className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-50"
-                                    >
-                                      {submitting ? '...' : 'Reply'}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        {/* Replies List */}
-                        {comment.replies && comment.replies.length > 0 && (
-                          <div className="mt-6 space-y-6 pl-6 border-l w-full border-zinc-200 dark:border-zinc-800">
-                            {comment.replies.map((reply) => (
-                              <div key={reply.id} className="flex gap-3">
-                                <div className="w-8 h-8 bg-zinc-100 dark:bg-zinc-900 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                                  {reply.userPhoto ? (
-                                    <img src={reply.userPhoto} alt={reply.userName} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <User size={16} className="text-zinc-400" />
-                                  )}
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                  <div className="flex flex-wrap items-center gap-3">
-                                    <span className="text-xs font-bold dark:text-white uppercase tracking-tight">{reply.userName}</span>
-                                    <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">{formatDate(reply.createdAt)}</span>
-                                  </div>
-                                  <p className="text-sm text-zinc-700 dark:text-zinc-400 leading-relaxed font-medium">
-                                    {reply.content}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <CommentItem comment={comment} />
                     </motion.div>
                   ))}
                 </AnimatePresence>

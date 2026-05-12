@@ -62,10 +62,13 @@
       "properties": {
         "id": { "type": "string" },
         "articleId": { "type": "string" },
+        "parentId": { "type": "string", "description": "ID of the parent comment for nested replies" },
         "userId": { "type": "string" },
         "userName": { "type": "string" },
         "userPhoto": { "type": "string" },
         "content": { "type": "string" },
+        "likes": { "type": "integer" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["articleId", "userId", "content"]

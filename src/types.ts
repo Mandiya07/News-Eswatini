@@ -80,6 +80,7 @@ export interface Ad {
 export interface Comment {
   id: string;
   articleId: string;
+  parentId?: string;
   userId: string;
   userName: string;
   userPhoto?: string;
@@ -87,16 +88,6 @@ export interface Comment {
   createdAt: any;
   likes?: number;
   likedBy?: string[];
-  replies?: Reply[];
-}
-
-export interface Reply {
-  id: string;
-  userId: string;
-  userName: string;
-  userPhoto?: string;
-  content: string;
-  createdAt: any;
 }
 
 export interface Poll {
