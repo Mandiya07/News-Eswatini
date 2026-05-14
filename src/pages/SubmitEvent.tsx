@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { TINKHUNDLA_DATA } from '../constants';
 import { EventType } from '../types';
+import MediaUpload from '../components/MediaUpload';
 
 export default function SubmitEvent() {
   const { user, userData } = useAuth();
@@ -22,7 +23,8 @@ export default function SubmitEvent() {
     date: '',
     location: '',
     region: 'Hhohho',
-    constituency: ''
+    constituency: '',
+    imageURL: ''
   });
 
   const regions = Object.keys(TINKHUNDLA_DATA);
@@ -202,6 +204,14 @@ export default function SubmitEvent() {
                     required
                     placeholder="Provide full details, agenda, or background information..."
                     className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-rose-600 dark:text-white font-medium min-h-[150px] resize-y"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <MediaUpload 
+                    label="Event Poster / Image (Optional)"
+                    onUploadComplete={(url) => setFormData({ ...formData, imageURL: url })}
+                    accept="image"
                   />
                 </div>
 

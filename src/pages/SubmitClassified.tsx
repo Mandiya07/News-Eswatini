@@ -4,8 +4,9 @@ import { auth, db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { ALL_TINKHUNDLA } from '../constants';
-import { Megaphone, CreditCard, CheckCircle2 } from 'lucide-react';
+import { Megaphone, CreditCard, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
+import MediaUpload from '../components/MediaUpload';
 
 export default function SubmitClassified() {
   const navigate = useNavigate();
@@ -17,7 +18,8 @@ export default function SubmitClassified() {
     category: 'For Sale',
     constituency: '',
     price: '',
-    contactInfo: ''
+    contactInfo: '',
+    imageURL: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -164,6 +166,14 @@ export default function SubmitClassified() {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <MediaUpload 
+              label="Upload Ad Image (Optional)"
+              onUploadComplete={(url) => setFormData({ ...formData, imageURL: url })}
+              accept="image"
+            />
           </div>
 
           <div className="bg-amber-50 dark:bg-amber-900/10 p-6 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-start gap-4">

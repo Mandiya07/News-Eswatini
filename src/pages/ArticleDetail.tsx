@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield, Phone } from 'lucide-react';
+import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield, Phone, Image as ImageIcon } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article, Comment } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
@@ -8,14 +8,17 @@ import ReactMarkdown from 'react-markdown';
 import { auth } from '../lib/firebase';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
+import MediaUpload from '../components/MediaUpload';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<Article | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [commentImage, setCommentImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [replyImage, setReplyImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -107,10 +110,12 @@ export default function ArticleDetail() {
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Anonymous',
         userPhoto: auth.currentUser.photoURL || undefined,
-        content: newComment
+        content: newComment,
+        imageURL: commentImage || undefined
       };
       await newsService.addComment(id!, commentData);
       setNewComment('');
+      setCommentImage(null);
       const updatedComments = await newsService.getComments(id!);
       setComments(updatedComments);
       toast.success('Comment posted successfully');
@@ -163,10 +168,12 @@ export default function ArticleDetail() {
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Anonymous',
         userPhoto: auth.currentUser.photoURL || undefined,
-        content: replyContent
+        content: replyContent,
+        imageURL: replyImage || undefined
       };
       await newsService.addReply(id!, parentId, replyData);
       setReplyContent('');
+      setReplyImage(null);
       setReplyingTo(null);
       // Refresh comments
       const updatedComments = await newsService.getComments(id!);
@@ -221,6 +228,11 @@ export default function ArticleDetail() {
           <p className={cn("text-zinc-800 dark:text-zinc-300 leading-relaxed font-medium", depth > 0 ? "text-sm" : "text-base")}>
             {comment.content}
           </p>
+          {comment.imageURL && (
+            <div className="mt-3 rounded-2xl overflow-hidden max-w-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
+              <img src={comment.imageURL} alt="Comment attachment" className="w-full h-auto object-cover max-h-[300px]" />
+            </div>
+          )}
           <div className="flex items-center gap-6 pt-2">
             <button 
               onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
@@ -260,6 +272,14 @@ export default function ArticleDetail() {
                       className="w-full bg-transparent border-none p-0 focus:ring-0 outline-none dark:text-white min-h-[60px] text-sm"
                       autoFocus
                     />
+                    <div className="pt-2">
+                      <MediaUpload 
+                        onUploadComplete={(url) => setReplyImage(url)}
+                        accept="image"
+                        label="Attach image"
+                        className="!space-y-0"
+                      />
+                    </div>
                     <div className="flex justify-end gap-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
                       <button 
                         onClick={() => {
@@ -518,7 +538,15 @@ export default function ArticleDetail() {
                       className="flex-1 bg-transparent border-none p-0 min-h-[80px] focus:ring-0 outline-none dark:text-white disabled:opacity-50 font-medium placeholder:text-zinc-400 text-lg"
                     />
                   </div>
-                  <div className="flex justify-end pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                  <div className="flex justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800 items-center">
+                    <div className="flex items-center gap-4">
+                      <MediaUpload 
+                        onUploadComplete={(url) => setCommentImage(url)}
+                        accept="image"
+                        label="Attach image"
+                        className="!space-y-0"
+                      />
+                    </div>
                     <button 
                       type="submit"
                       disabled={!auth.currentUser || submitting || !newComment.trim()}

@@ -85,6 +85,7 @@ export interface Comment {
   userName: string;
   userPhoto?: string;
   content: string;
+  imageURL?: string;
   createdAt: any;
   likes?: number;
   likedBy?: string[];
@@ -135,6 +136,7 @@ export interface CommunityEvent {
   location: string;
   region?: string;
   constituency?: string;
+  imageURL?: string;
   submitterId: string;
   submitterName: string;
   status: 'pending' | 'approved' | 'rejected';

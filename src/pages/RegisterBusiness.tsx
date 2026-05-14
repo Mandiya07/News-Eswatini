@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { newsService } from '../services/newsService';
 import { ALL_TINKHUNDLA, REGIONS } from '../constants';
 import { BusinessLocation } from '../types';
+import MediaUpload from '../components/MediaUpload';
 
 const BUSINESS_CATEGORIES = [
   'Agriculture & Farming',
@@ -166,17 +167,11 @@ export default function RegisterBusiness() {
                 ></textarea>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5"><ImageIcon size={14} /> Image URL</label>
-                <input
-                  type="url"
-                  name="imageURL"
-                  value={formData.imageURL}
-                  onChange={handleChange}
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-600 outline-none dark:text-white"
-                  placeholder="https://example.com/storefront.jpg"
-                />
-              </div>
+              <MediaUpload 
+                label="Business / Storefront Image"
+                onUploadComplete={(url) => setFormData(prev => ({ ...prev, imageURL: url }))}
+                accept="image"
+              />
             </div>
 
             {/* Contact Info */}

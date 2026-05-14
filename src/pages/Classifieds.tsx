@@ -107,9 +107,19 @@ export default function Classifieds() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {classifieds.map(ad => (
               <div key={ad.id} className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col h-full hover:shadow-xl transition-shadow relative">
-                <span className="absolute -top-3 -right-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest shadow-lg">
+                <span className="absolute -top-3 -right-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest shadow-lg z-10">
                   {ad.category}
                 </span>
+
+                {ad.imageURL && (
+                  <div className="aspect-[16/9] mb-4 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 -mx-1 -mt-1">
+                    <img 
+                      src={ad.imageURL} 
+                      alt={ad.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                )}
                 
                 <h3 className="text-lg font-bold dark:text-white mb-2 line-clamp-2 mt-2">{ad.title}</h3>
                 
