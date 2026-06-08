@@ -31,6 +31,10 @@ export interface User {
     accountName: string;
   };
   isVerifiedPolitician?: boolean;
+  isSubscriber?: boolean;
+  subscriptionTier?: 'basic' | 'standard' | 'premium' | 'patron';
+  subscriptionExpiry?: string;
+  subscriptionActiveSince?: string;
 }
 
 export type ArticleStatus = 'draft' | 'published' | 'scheduled';
@@ -86,6 +90,8 @@ export interface Comment {
   userPhoto?: string;
   content: string;
   imageURL?: string;
+  isSubscriber?: boolean;
+  subscriptionTier?: string;
   createdAt: any;
   likes?: number;
   likedBy?: string[];

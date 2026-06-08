@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield, Phone, Image as ImageIcon } from 'lucide-react';
+import { Clock, User, MessageSquare, Heart, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon, ChevronRight, ArrowLeft, MessageCircle, Check, Shield, Phone, Image as ImageIcon, Crown } from 'lucide-react';
 import { newsService } from '../services/newsService';
 import { Article, Comment } from '../types';
 import { formatDate, truncate, cn } from '../lib/utils';
@@ -9,9 +9,11 @@ import { auth } from '../lib/firebase';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import MediaUpload from '../components/MediaUpload';
+import { useAuth } from '../hooks/useAuth';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
+  const { userData } = useAuth();
   const [article, setArticle] = useState<Article | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -111,7 +113,9 @@ export default function ArticleDetail() {
         userName: auth.currentUser.displayName || 'Anonymous',
         userPhoto: auth.currentUser.photoURL || undefined,
         content: newComment,
-        imageURL: commentImage || undefined
+        imageURL: commentImage || undefined,
+        isSubscriber: userData?.isSubscriber || false,
+        subscriptionTier: userData?.subscriptionTier || null
       };
       await newsService.addComment(id!, commentData);
       setNewComment('');
@@ -169,7 +173,9 @@ export default function ArticleDetail() {
         userName: auth.currentUser.displayName || 'Anonymous',
         userPhoto: auth.currentUser.photoURL || undefined,
         content: replyContent,
-        imageURL: replyImage || undefined
+        imageURL: replyImage || undefined,
+        isSubscriber: userData?.isSubscriber || false,
+        subscriptionTier: userData?.subscriptionTier || null
       };
       await newsService.addReply(id!, parentId, replyData);
       setReplyContent('');
@@ -223,6 +229,12 @@ export default function ArticleDetail() {
         <div className="flex-1 space-y-2.5">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className={cn("font-bold dark:text-white uppercase tracking-tight", depth > 0 ? "text-xs" : "text-sm")}>{comment.userName}</span>
+            {comment.isSubscriber && (
+              <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-amber-500/20">
+                <Crown size={8} className="fill-amber-500" />
+                {comment.subscriptionTier === 'standard' ? 'Supporter' : comment.subscriptionTier === 'premium' ? 'Insider' : comment.subscriptionTier === 'patron' ? 'Patron' : 'Premium'}
+              </span>
+            )}
             <span className={cn("text-zinc-500 font-bold uppercase tracking-widest", depth > 0 ? "text-[8px]" : "text-[10px]")}>{formatDate(comment.createdAt)}</span>
           </div>
           <p className={cn("text-zinc-800 dark:text-zinc-300 leading-relaxed font-medium", depth > 0 ? "text-sm" : "text-base")}>

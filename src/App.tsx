@@ -25,6 +25,7 @@ import Classifieds from './pages/Classifieds';
 import SubmitClassified from './pages/SubmitClassified';
 import PoliticianPortal from './pages/PoliticianPortal';
 import BountyBoard from './pages/BountyBoard';
+import Subscription from './pages/Subscription';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
             <Route path="/region/:region" element={<Region />} />
             <Route path="/region/:region/category/:category" element={<Region />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="/directory" element={<Directory />} />
             <Route path="/directory/:id" element={<BusinessDetail />} />
             <Route path="/register-business" element={<RegisterBusiness />} />

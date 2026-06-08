@@ -4,7 +4,7 @@ import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { User as UserIcon, Mail, Shield, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin, Twitter, Facebook, Instagram, Globe, Eye, Coins, FileText, ChevronUp } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Crown, Calendar, Bookmark, Heart, MessageSquare, Edit2, Camera, ArrowRight, TrendingUp, Award, Wallet, MapPin, Twitter, Facebook, Instagram, Globe, Eye, Coins, FileText, ChevronUp } from 'lucide-react';
 import { formatDate, cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
@@ -170,6 +170,11 @@ export default function Profile() {
                 <span className="bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-sm border border-zinc-100 dark:border-zinc-700">
                   <Shield size={14} className="text-rose-500" /> {userData?.role || 'Reader'}
                 </span>
+                {userData?.isSubscriber && (
+                  <span className="bg-amber-500 text-white text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-lg shadow-amber-500/20 animate-pulse">
+                    <Crown size={14} /> {userData.subscriptionTier === 'standard' ? 'MoMo Supporter' : userData.subscriptionTier === 'premium' ? 'Eswatini Insider' : userData.subscriptionTier === 'patron' ? 'Editorial Patron' : 'Premium Reader'}
+                  </span>
+                )}
                 {(userData?.role === 'admin' || userData?.role === 'ministry_admin') && userData.officialTitle && (
                   <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-[0.3em] px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-lg shadow-rose-600/20">
                     <Shield size={14} /> {userData.officialTitle}
@@ -274,6 +279,63 @@ export default function Profile() {
                   </>
                 )}
               </div>
+            </div>
+
+            {/* Membership Details */}
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-[3rem] p-12 border border-zinc-100 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-rose-600/5 dark:bg-rose-600/10 rounded-full blur-2xl font-black"></div>
+              <h3 className="text-[10px] font-black text-rose-605 text-rose-600 dark:text-rose-500 uppercase tracking-[0.4em] mb-10 flex items-center gap-3">
+                <Crown size={16} /> Membership
+              </h3>
+
+              {userData?.isSubscriber ? (
+                <div className="space-y-6">
+                  <div className="p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-4">
+                    <Crown className="text-amber-500 animate-pulse flex-shrink-0" size={24} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black tracking-widest text-zinc-400 uppercase">Premium Active Plan</p>
+                      <h4 className="serif text-lg font-bold dark:text-white capitalize leading-snug mt-0.5 truncate">
+                        {userData.subscriptionTier === 'standard' ? 'MoMo Supporter' : userData.subscriptionTier === 'premium' ? 'Eswatini Insider' : userData.subscriptionTier === 'patron' ? 'Editorial Patron' : 'Premium Reader'}
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="text-xs font-semibold text-zinc-505 text-zinc-500 space-y-2 uppercase tracking-widest">
+                    {userData.subscriptionActiveSince && (
+                      <p className="flex justify-between">
+                        <span className="text-zinc-400">Since:</span>
+                        <span className="text-zinc-800 dark:text-zinc-300 font-bold">{new Date(userData.subscriptionActiveSince).toLocaleDateString()}</span>
+                      </p>
+                    )}
+                    {userData.subscriptionExpiry && (
+                      <p className="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-2">
+                        <span className="text-zinc-400">Renews:</span>
+                        <span className="text-zinc-800 dark:text-zinc-300 font-bold">{new Date(userData.subscriptionExpiry).toLocaleDateString()}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => navigate('/subscription')}
+                    className="w-full py-4 text-center bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-xl text-[10px] font-black uppercase tracking-widest border border-zinc-200 dark:border-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    Adjust Membership Tier
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <p className="text-xs font-semibold text-zinc-400 leading-relaxed uppercase tracking-wider">
+                    You are currently using our free, ad-supported tier. Upgrade to remove advertisements, unlock gazettes, and obtain loyal comment badges.
+                  </p>
+                  
+                  <button
+                    onClick={() => navigate('/subscription')}
+                    className="w-full py-4 text-center bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-rose-600/15"
+                  >
+                    Explore Premium Plans
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

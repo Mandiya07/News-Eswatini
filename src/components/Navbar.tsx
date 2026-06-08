@@ -59,7 +59,7 @@ export default function Navbar() {
   };
 
   const categories = [
-    'Politics', 'Sports', 'Business', 'Education', 'Health', 'Entertainment', 'Technology', 'Community'
+    'Politics', 'Business', 'Education', 'Health', 'Entertainment', 'Technology', 'Community', 'Sports'
   ];
 
   const regions = ['Hhohho', 'Manzini', 'Lubombo', 'Shiselweni'];
@@ -117,7 +117,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-4 group">
+            <Link to="/" className="flex items-center gap-4 group shrink-0">
               <div className="relative">
                 <div className={cn(
                   "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-2xl transition-all duration-500 shadow-xl",
@@ -137,11 +137,11 @@ export default function Navbar() {
             </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden lg:flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-1 xl:gap-2">
               <Link 
                 to="/nationwide" 
                 className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
                   location.pathname === '/nationwide' 
                     ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
                     : scrolled
@@ -156,7 +156,7 @@ export default function Navbar() {
               <Link 
                 to="/classifieds" 
                 className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
                   location.pathname.startsWith('/classifieds') 
                     ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
                     : scrolled
@@ -171,7 +171,7 @@ export default function Navbar() {
               <Link 
                 to="/bounties" 
                 className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
                   location.pathname === '/bounties' 
                     ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" 
                     : scrolled
@@ -186,7 +186,7 @@ export default function Navbar() {
               <Link 
                 to="/directory" 
                 className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav whitespace-nowrap",
                   location.pathname.startsWith('/directory') 
                     ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
                     : scrolled
@@ -194,14 +194,14 @@ export default function Navbar() {
                       : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
                 )}
               >
-                Services Directory
+                Directory
                 {!location.pathname.startsWith('/directory') && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
               </Link>
 
               <Link 
                 to="/gazette" 
                 className={cn(
-                  "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
+                  "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav",
                   location.pathname === '/gazette' 
                     ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
                     : scrolled
@@ -212,6 +212,21 @@ export default function Navbar() {
                 Gazette
                 {location.pathname !== '/gazette' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
               </Link>
+
+              <Link 
+                to="/subscription" 
+                className={cn(
+                  "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest transition-all rounded-full relative group/nav flex items-center gap-1.5",
+                  location.pathname === '/subscription' 
+                    ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
+                    : scrolled
+                      ? "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                      : "text-rose-500 dark:text-rose-400 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
+                )}
+              >
+                {userData?.isSubscriber ? '⭐ Premium Portal' : '⭐ Subscribe'}
+                {location.pathname !== '/subscription' && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-rose-600 rounded-full scale-0 group-hover/nav:scale-100 transition-transform"></span>}
+              </Link>
               
               <div className="relative nav-menu-container">
                 <button 
@@ -219,7 +234,7 @@ export default function Navbar() {
                   aria-expanded={openMenu === 'regions'}
                   aria-controls="regions-menu"
                   className={cn(
-                    "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all group/nav relative",
+                    "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-1 xl:gap-2 transition-all group/nav relative",
                     scrolled
                       ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                       : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
@@ -252,7 +267,7 @@ export default function Navbar() {
                   aria-expanded={openMenu === 'constituencies'}
                   aria-controls="constituencies-menu"
                   className={cn(
-                    "px-5 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all group/nav relative",
+                    "px-3 py-2 xl:px-4 xl:py-2.5 text-[10px] xl:text-[11px] font-black uppercase tracking-widest rounded-full flex items-center gap-1 xl:gap-2 transition-all group/nav relative",
                     scrolled
                       ? "text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                       : "text-zinc-700 dark:text-zinc-200 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-white/20 [text-shadow:_0_1px_2px_rgb(0_0_0_/_10%)] dark:[text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)]"
@@ -303,7 +318,7 @@ export default function Navbar() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className={cn(
@@ -336,7 +351,7 @@ export default function Navbar() {
               )}></div>
               
               {user ? (
-                <div className="relative group">
+                <div className="relative group shrink-0">
                   <button className="flex items-center gap-2 p-1 rounded-full transition-all">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt={user.displayName} className="w-8 h-8 rounded-full object-cover ring-2 ring-transparent group-hover:ring-rose-500 transition-all shadow-sm" />
@@ -378,7 +393,7 @@ export default function Navbar() {
                 </div>
               ) : (
                 <Link to="/login" className={cn(
-                  "hidden sm:flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg",
+                  "hidden sm:flex items-center gap-2 px-4 py-2 xl:px-5 xl:py-2.5 rounded-full text-[10px] xl:text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shrink-0",
                   "bg-rose-600 text-white shadow-rose-600/20"
                 )}>
                   Sign In
@@ -404,10 +419,11 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-zinc-100 dark:bg-zinc-900 border-b-2 border-zinc-300 dark:border-zinc-800 overflow-hidden shadow-2xl"
+            className="lg:hidden bg-zinc-100 dark:bg-zinc-900 border-b-2 border-zinc-300 dark:border-zinc-800 overflow-y-auto max-h-[80vh] no-scrollbar shadow-2xl"
           >
             <div className="p-6 space-y-8">
               <div className="grid grid-cols-2 gap-4">
+                <Link to="/subscription" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-gradient-to-r from-rose-600 to-amber-500 text-white rounded-2xl shadow-md col-span-2 gap-2">⭐ {userData?.isSubscriber ? 'Premium Portal' : 'Subscribe to Premium'}</Link>
                 <Link to="/nationwide" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-white dark:bg-zinc-900 rounded-2xl dark:text-zinc-300 shadow-sm border border-zinc-100 dark:border-zinc-800">Nationwide</Link>
                 <Link to="/bounties" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-2xl shadow-sm border border-amber-100 dark:border-amber-800">Bounties</Link>
                 <Link to="/directory" className="flex items-center justify-center h-14 text-xs font-black uppercase tracking-widest bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-2xl shadow-sm border border-rose-100 dark:border-rose-800 col-span-2">Local Services Directory</Link>
@@ -482,19 +498,19 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Category Bar (Desktop) */}
+      {/* Category Bar */}
       <div className={cn(
-        "hidden lg:block transition-all duration-300",
+        "block transition-all duration-300",
         scrolled ? "bg-transparent h-0 opacity-0 invisible" : "bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-200 dark:border-zinc-800"
       )}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-10 h-12 overflow-x-auto no-scrollbar">
+          <div className="flex items-center justify-start lg:justify-center gap-4 xl:gap-5 h-12 overflow-x-auto no-scrollbar">
             {categories.map(cat => (
               <Link 
                 key={cat} 
                 to={`/category/${cat.toLowerCase()}`} 
                 className={cn(
-                  "text-[10px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap relative py-3 group/cat",
+                  "shrink-0 text-[10px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap relative py-3 group/cat",
                   location.pathname === `/category/${cat.toLowerCase()}`
                     ? "text-rose-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-rose-600"
                     : "text-zinc-500 hover:text-rose-600 after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-0.5 after:bg-rose-600/30 after:transition-all"
